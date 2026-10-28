@@ -1,0 +1,63 @@
+# Memasang kode SIMAK ke Apps Script setiap kali file di folder src/ berubah.
+# Data (Sheets, Drive) tidak disentuh. Deployment lama diperbarui, link /exec tetap sama.
+name: Pasang ke Apps Script
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/**']
+  workflow_dispatch:        # tombol "Run workflow" untuk menjalankan manual
+
+concurrency: pasang-simak
+
+jobs:
+  pasang:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pasang clasp
+        run: npm install -g @google/clasp@2.4.2
+
+      - name: Login akun Google PK
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ]; then echo "::error::Secret CLASPRC_JSON belum diisi"; exit 1; fi
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+
+      - name: Ambil proyek Apps Script yang sedang jalan
+        env:
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          mkdir live && cd live
+          clasp clone "$SCRIPT_ID" --rootDir .
+          echo "File di Apps Script:"; ls -1
+
+      - name: Timpa dengan kode dari GitHub
+        run: |
+          cd live
+          # File server = file .js yang berisi function setup() (apa pun namanya: Kode / Code)
+          SERVER=$(grep -l "^function setup()" *.js | head -1)
+          if [ -z "$SERVER" ]; then echo "::error::File kode server (berisi function setup) tidak ditemukan di Apps Script"; exit 1; fi
+          echo "Kode server ditulis ke: $SERVER"
+          cp ../src/Code.gs "$SERVER"
+          cp ../src/Index.html Index.html
+          # Pengaturan proyek (appsscript.json) TIDAK diubah: dipakai yang sudah ada di Apps Script.
+          ls -1
+
+      - name: Kirim kode ke Apps Script
+        run: cd live && clasp push --force
+
+      - name: Buat Versi baru & perbarui deployment
+        env:
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
+        run: |
+          cd live
+          VERSI=$(grep -o "Versi [0-9]* [A-Za-z]* [0-9]* · [0-9.]*" Index.html | head -1)
+          clasp deploy -i "$DEPLOYMENT_ID" -d "GitHub ${GITHUB_SHA::7} ${VERSI}"
+          echo "Selesai: ${VERSI}"
