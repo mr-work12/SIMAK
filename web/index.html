@@ -56,6 +56,11 @@
   var hash = (location.hash || '').replace(/^#/, '');
   [jalur, hash].forEach(function (x) { if (x && x !== 'index.html') q = q ? q + '&' + x : x; });
   var src = APLIKASI + (q ? '?' + q : '');
+  // Tautan sekali pakai (QR/poster: ?dad, ?kader, ?status, ?daftar, ?masuk): setelah dibuka, alamat di browser
+  // dikembalikan ke halaman awal, supaya saat situs dibuka lagi tidak langsung masuk ke formulir.
+  if (/(^|&)(dad|kader|status|daftar|pilih|masuk)(=|&|$)/.test(q) || /^(dad|kader|status|daftar|masuk)$/.test(jalur)) {
+    try { history.replaceState(null, '', '/'); } catch (e) {}
+  }
   document.getElementById('langsung').href = src;
   var f = document.createElement('iframe');
   f.src = src;
