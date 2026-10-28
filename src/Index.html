@@ -557,7 +557,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 28 Okt 2026 · 15.00</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 28 Okt 2026 · 15.10</p>
     </div>
   </section>
   <div class="tengah">
@@ -567,7 +567,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 28 Okt 2026 · 15.00</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 28 Okt 2026 · 15.10</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -2904,7 +2904,7 @@
         ${w.webhook ? `<div style="display:flex;gap:8px"><input id="urlWebhookWA" readonly value="${esc(w.webhook)}" style="flex:1;font-size:12px">
           <button type="button" class="btn sek kecil" onclick="salinTeks($('urlWebhookWA').value)">Salin</button></div>` : '<p class="kosong">URL webhook muncul setelah aplikasi di-deploy.</p>'}
         <div class="baris-aksi" style="margin-top:8px"><button type="button" class="btn sek kecil" onclick="tesWebhookX(this)">🧪 Tes webhook (SIMAK kirim MENU ke dirinya sendiri)</button></div>
-        <p class="info" style="font-size:12px">Hanya pesan berisi kata kunci <b>MENU, STATUS, JADWAL, DAFTAR, AKUN, MOTIVASI, ADMIN</b> yang dibalas. Chat biasa dan pesan grup tidak dibalas, jadi aman memakai nomor pribadi. URL ini rahasia — jangan dibagikan.</p>
+        <p class="info" style="font-size:12px">Hanya pesan yang isinya <b>persis satu kata</b>: <b>MENU, STATUS, JADWAL, DAFTAR, AKUN, MOTIVASI, ADMIN</b> yang dibalas. Kalimat biasa (mis. "semangat ya", "menu nya apa") dan pesan grup tidak dibalas. Pesan yang Anda ketik sendiri dari nomor ini juga diabaikan bila Fonnte menandainya. URL ini rahasia — jangan dibagikan.</p>
       </details>
       <div style="margin-top:14px;border-top:1px solid var(--garis);padding-top:10px">
         <label>Kirim pesan tes ke nomor</label>

@@ -3226,7 +3226,7 @@ const JENIS_WA = [
   ['peringatan', 'Peringatan tidak hadir berulang', true],
   ['sertifikat', 'Sertifikat sudah bisa diunduh', false],
   ['kaderBaru', 'Sambutan kader yang baru membuat akun (dengan motivasi & dalil)', true],
-  ['balas', 'Balas otomatis pesan masuk berisi kata kunci (MENU, STATUS, JADWAL, DAFTAR, AKUN, MOTIVASI, ADMIN)', false]
+  ['balas', 'Balas otomatis bila isi pesan PERSIS satu kata kunci: MENU, STATUS, JADWAL, DAFTAR, AKUN, MOTIVASI, ADMIN', false]
 ];
 function pengaturanWA_() {
   let x = {};
@@ -3317,7 +3317,11 @@ function doPost(e) {
     if (!sender || !pesan) { catatWA_('masuk', sender || '-', 0, 'Diabaikan', 'Pesan kosong · data: ' + JSON.stringify(d).slice(0, 200)); return ContentService.createTextOutput('skip'); }
     if (d.member || /@g\.us|-/.test(sender)) return ContentService.createTextOutput('skip');   // pesan grup tidak dibalas
     // Fonnte juga meneruskan pesan KELUAR (balasan SIMAK sendiri). Abaikan supaya tidak terjadi balasan berantai/dobel.
-    if (/pesan otomatis/i.test(pesan) || pesan.length > 80 || d.fromMe === true || d.fromMe === 'true' || d.isFromMe === true) return ContentService.createTextOutput('self');
+    // Pesan yang DIKETIK SENDIRI dari nomor WA SIMAK (mis. admin chat ke teman) juga diteruskan Fonnte -> jangan dibalas.
+    if (/pesan otomatis/i.test(pesan) || pesan.length > 80 || pesanSendiri_(d, sender)) {
+      catatWA_('masuk', sender, 1, 'Diabaikan', 'Pesan keluar dari nomor SIMAK sendiri · ' + ringkasWebhook_(d));
+      return ContentService.createTextOutput('self');
+    }
     // Cegah balasan dobel: Fonnte bisa mengirim ulang webhook yang sama. Satu kata kunci dari satu nomor dibalas sekali per 2 menit.
     const c = CacheService.getScriptCache();
     const kata = rapiTeks_(pesan).toLowerCase().replace(/[^\w\s]/g, ' ').trim().split(/\s+/)[0] || '';
@@ -3329,21 +3333,26 @@ function doPost(e) {
       c.put(k1, '1', 120); if (k2) c.put(k2, '1', 3600);
     } finally { lock.releaseLock(); }
     const balasan = balasanWA_(sender, pesan, String(d.name || ''));
-    if (!balasan) catatWA_('masuk', sender, 1, 'Diterima', 'Tanpa kata kunci, tidak dibalas: ' + pesan.slice(0, 40));
+    if (!balasan) catatWA_('masuk', sender, 1, 'Diterima', 'Bukan kata kunci, tidak dibalas · ' + ringkasWebhook_(d));
     else if (!w.aktif || !w.jenis.balas) catatWA_('masuk', sender, 1, 'Tidak dibalas', 'WA otomatis / Balas otomatis belum dicentang & disimpan di SIMAK');
     else kirimWA_(sender, balasan, 'balas');
   } catch (er) { Logger.log('doPost WA: ' + er.message); }
   return ContentService.createTextOutput('ok');
 }
+const KATA_KUNCI_WA = ['menu', 'status', 'jadwal', 'daftar', 'akun', 'motivasi', 'admin'];
 /** Menyusun balasan berdasarkan kata kunci. Pesan tanpa kata kunci TIDAK dibalas (supaya chat biasa tidak terganggu). */
 function balasanWA_(sender, pesan, nama) {
-  const t = rapiTeks_(pesan).toLowerCase().replace(/[^\w\s]/g, ' ').trim(), kata = t.split(/\s+/)[0] || '';
+  // Hanya pesan yang ISINYA PERSIS satu kata kunci (boleh huruf besar/kecil, boleh diawali # atau /) yang dibalas.
+  // "semangat ya", "menu nya apa", dll. tidak dibalas supaya chat biasa tidak terganggu.
+  const t = rapiTeks_(pesan).toLowerCase().replace(/[^\w\s]/g, ' ').trim();
+  const kata = /\s/.test(t) ? '' : t;
+  if (KATA_KUNCI_WA.indexOf(kata) < 0) return '';
   const url = urlAplikasi_(), w = pengaturanWA_();
   const MENU = '📋 *Menu ' + CONFIG.NAMA_SISTEM + ' — ' + CONFIG.PENYELENGGARA + '*\nBalas dengan kata berikut:\n\n' +
     '*STATUS* — cek status pendaftaran DAD / akun kader\n*JADWAL* — kegiatan terdekat\n*DAFTAR* — link pendaftaran DAD\n' +
     '*AKUN* — link masuk SIMAK & lupa PIN\n*MOTIVASI* — motivasi & dalil penyemangat\n*ADMIN* — kontak pengurus';
-  if (['menu', 'simak', 'info', 'help', 'bantuan'].indexOf(kata) >= 0) return 'Assalamu\'alaikum' + (nama ? ', ' + nama : '') + ' 👋\n\n' + MENU;
-  if (['status', 'cek'].indexOf(kata) >= 0) {
+  if (['menu'].indexOf(kata) >= 0) return 'Assalamu\'alaikum' + (nama ? ', ' + nama : '') + ' 👋\n\n' + MENU;
+  if (['status'].indexOf(kata) >= 0) {
     const kader = rows_('PESERTA').find(r => hpSama_(sender, r[4]));
     if (kader) {
       const a = rows_('ABSENSI').filter(r => r[3] === kader[0]), hadir = a.filter(r => r[5] === 'Hadir').length;
@@ -3358,7 +3367,7 @@ function balasanWA_(sender, pesan, nama) {
       return 'Nomor ini belum terdaftar sebagai calon peserta DAD maupun kader.\nDaftar DAD: ' + url + '/?dad\nSudah pernah DAD? Buat akun: ' + url + '/?kader';
     }
   }
-  if (['jadwal', 'kegiatan', 'agenda'].indexOf(kata) >= 0) {
+  if (['jadwal'].indexOf(kata) >= 0) {
     const kini = hariIni_(), lokasi = petaLokasi_();
     const k = rows_('KEGIATAN').filter(r => tambahTgl_(fmt_(r[2]), jumlahHari_(r) - 1) >= kini)
       .sort((a, b) => fmt_(a[2]).localeCompare(fmt_(b[2]))).slice(0, 5);
@@ -3369,18 +3378,33 @@ function balasanWA_(sender, pesan, nama) {
         (waktu ? ', ' + waktu : '') + ([lok ? lok.nama : '', r[4]].filter(Boolean).length ? '\n   📍 ' + [lok ? lok.nama : '', r[4]].filter(Boolean).join(' · ') : '');
     }).join('\n\n') + '\n\nAbsen lewat SIMAK: ' + url + '/?masuk';
   }
-  if (['daftar', 'dad', 'pendaftaran'].indexOf(kata) >= 0)
+  if (['daftar'].indexOf(kata) >= 0)
     return '📝 *Pendaftaran Darul Arqam Dasar (DAD)*' + (jadwalDAD_() ? '\nJadwal: ' + jadwalDAD_() : '') +
       '\n\nIsi formulir di sini:\n' + url + '/?dad\n\nCek status pendaftaran: ' + url + '/?status';
-  if (['akun', 'masuk', 'login', 'pin', 'link'].indexOf(kata) >= 0)
+  if (['akun'].indexOf(kata) >= 0)
     return '🔑 *Masuk SIMAK*\n' + url + '/?masuk\n\nMasuk dengan email + NPM/NIA + PIN. Lupa PIN? Tekan *Lupa PIN?* di halaman masuk, kode dikirim ke email' +
       (w.jenis.pin ? ' dan WhatsApp' : '') + '.\n\nSudah DAD tapi belum punya akun? ' + url + '/?kader';
-  if (['motivasi', 'semangat', 'dalil', 'quote', 'nasihat', 'nasehat'].indexOf(kata) >= 0)
+  if (['motivasi'].indexOf(kata) >= 0)
     return 'Assalamu\'alaikum' + (nama ? ', ' + nama : '') + ' 🌱\n\n' + teksDalil_(DALIL_KADER.concat(DALIL_DAD)) +
       '\n\n_Balas *MOTIVASI* lagi lain waktu untuk motivasi lainnya._';
-  if (['admin', 'cp', 'kontak', 'pengurus'].indexOf(kata) >= 0)
+  if (['admin'].indexOf(kata) >= 0)
     return '📞 *Kontak ' + CONFIG.PENYELENGGARA + '*\n' + (w.noAdmin ? 'WhatsApp: wa.me/' + nomorWA_(w.noAdmin) + '\n' : '') + 'Email: pkimmfaiumbengkulu@gmail.com';
   return '';
+}
+
+/** Tanda-tanda pesan keluar (dikirim dari nomor yang tersambung di Fonnte), dari berbagai nama field yang mungkin. */
+function pesanSendiri_(d, sender) {
+  const ya = v => v === true || v === 1 || /^(true|1|yes|out|outgoing|sent|me)$/i.test(String(v == null ? '' : v));
+  if (['fromMe', 'from_me', 'isFromMe', 'isfromme', 'is_from_me', 'self', 'isMe', 'fromme', 'outgoing'].some(k => ya(d[k]))) return true;
+  if (['direction', 'type', 'status_message', 'msgType'].some(k => /^(out|outgoing|sent|send)$/i.test(String(d[k] || '')))) return true;
+  const dev = nomorWA_(d.device || ''), pengirim = nomorWA_(sender);
+  return !!(dev && pengirim && dev === pengirim);
+}
+/** Ringkasan isi webhook untuk Riwayat (tanpa isi pesan panjang) — membantu melacak field dari Fonnte. */
+function ringkasWebhook_(d) {
+  const o = {};
+  Object.keys(d || {}).forEach(k => { if (k !== 'message' && k !== 'text') o[k] = String(d[k]).slice(0, 25); });
+  return 'pesan: "' + String(d.message || d.text || '').slice(0, 20) + '" · ' + JSON.stringify(o).slice(0, 220);
 }
 
 /** Admin: SIMAK mengirim pesan "MENU" palsu ke webhook-nya sendiri, untuk memastikan bagian penerima berjalan. */
