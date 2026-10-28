@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "SIMAK · PK IMM FAI UM Bengkulu",
+  "short_name": "SIMAK",
+  "description": "Sistem Informasi Manajemen Kaderisasi · Bidang Kader PK IMM FAI UM Bengkulu",
+  "lang": "id",
+  "start_url": "/?app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf6f1",
+  "theme_color": "#8b1a1a",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/ikon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/ikon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/ikon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Daftar DAD", "url": "/?dad", "icons": [{ "src": "/ikon-192.png", "sizes": "192x192" }] },
+    { "name": "Cek Status DAD", "url": "/?status", "icons": [{ "src": "/ikon-192.png", "sizes": "192x192" }] },
+    { "name": "Masuk Admin", "url": "/?admin", "icons": [{ "src": "/ikon-192.png", "sizes": "192x192" }] }
+  ]
+}
