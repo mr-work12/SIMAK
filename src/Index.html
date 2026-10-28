@@ -557,7 +557,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 28 Okt 2026 · 15.50</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 28 Okt 2026 · 16.40</p>
     </div>
   </section>
   <div class="tengah">
@@ -567,7 +567,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 28 Okt 2026 · 15.50</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 28 Okt 2026 · 16.40</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -2895,6 +2895,7 @@
         <div class="baris-aksi" style="margin-top:10px"><button class="btn" id="btnSimpanWA" type="submit">Simpan</button>
           ${w.adaToken ? '<button type="button" class="btn hapus kecil" onclick="hapusTokenWA(this)">Hapus token</button>' : ''}</div>
       </form>
+      ${htmlGrupWA(w)}
       <details style="margin-top:12px" ${w.jenis.balas ? 'open' : ''}><summary style="cursor:pointer;color:var(--biru);font-size:14px">🤖 Balas otomatis — cara menyambungkan</summary>
         <ol style="font-size:13px;padding-left:18px;margin:8px 0">
           <li>Salin <b>URL webhook</b> di bawah.</li>
@@ -2916,6 +2917,50 @@
         <div class="wrap"><table style="font-size:13px"><tr><th>Waktu</th><th>Jenis</th><th>Tujuan</th><th>Status</th></tr>${w.log.map(l =>
           `<tr><td>${esc(l.waktu)}</td><td>${esc(l.jenis)}</td><td>${esc(l.tujuan)}</td><td>${l.status === 'Terkirim' ? '✅' : (l.status === 'Diterima' ? '📩 ' : '❌ ') + esc(l.status + (l.ket ? ': ' + l.ket : ''))}</td></tr>`).join('')}</table></div></details>` : ''}
       <p class="info" style="font-size:12px">Pesan dikirim lewat nomor yang tersambung di Fonnte. Supaya nomor aman dari blokir, kiriman ke banyak orang diberi jeda 8–15 detik per nomor. Ganti nomor kapan saja: di Fonnte scan ulang nomor baru, lalu tempel token barunya di sini bila berubah.</p>`;
+  }
+  let GRUP_WA = null;   // daftar grup dari Fonnte (diambil saat tombol ditekan)
+  function htmlGrupWA(w) {
+    const pilih = (nama, id, label) => {
+      const ops = (GRUP_WA || []).slice();
+      if (id && !ops.some(g => g.id === id)) ops.unshift({ id: id, nama: label || id });
+      return `<select id="${nama}" ${GRUP_WA || id ? '' : 'disabled'}><option value="">— tidak dipakai —</option>${ops.map(g =>
+        `<option value="${esc(g.id)}" ${g.id === id ? 'selected' : ''}>${esc(g.nama)}</option>`).join('')}</select>`;
+    };
+    const g = w.grupDAD;
+    return `<div style="margin-top:14px;border-top:1px solid var(--garis);padding-top:10px">
+      <h3 class="sub" style="margin-top:0">👥 Grup WhatsApp DAD</h3>
+      <p class="info" style="font-size:12px;margin-top:0">Nomor WA SIMAK harus sudah <b>masuk ke kedua grup</b>. Tiap ada <b>5 pendaftar baru</b>, SIMAK otomatis mengirim
+        ucapan selamat datang (berisi daftar nama mereka) ke grup calon peserta, dan <b>daftar lengkap pendaftar</b> ke grup pengurus.</p>
+      <button type="button" class="btn sek kecil" onclick="ambilGrupWA(this)">🔄 Ambil daftar grup dari Fonnte</button>
+      <label>Grup calon peserta DAD <small>(ucapan selamat datang)</small></label>${pilih('grupCalon', w.grupCalon, w.grupCalonNama)}
+      <label>Grup pengurus <small>(daftar pendaftar)</small></label>${pilih('grupPengurus', w.grupPengurus, w.grupPengurusNama)}
+      <div class="baris-aksi" style="margin-top:8px"><button type="button" class="btn kecil" onclick="simpanGrupWA(this)">Simpan grup</button></div>
+      ${g ? `<p style="font-size:13px;margin:10px 0 4px">Pendaftar DAD ${g.tahun}: <b>${g.total}</b> · sudah disambut di grup: <b>${g.disambut}</b>
+        · menunggu: <b>${g.total - g.disambut}</b> <small>(dikirim otomatis saat mencapai 5)</small></p>` : ''}
+      <div class="baris-aksi"><button type="button" class="btn sek kecil" onclick="kirimGrupDADX(this,'sambut')">👋 Sambut sekarang</button>
+        <button type="button" class="btn sek kecil" onclick="kirimGrupDADX(this,'rekap')">📋 Kirim daftar ke grup pengurus</button></div>
+    </div>`;
+  }
+  async function ambilGrupWA(b) {
+    sibuk(b, 'Mengambil…');
+    try { GRUP_WA = await panggil('daftarGrupWA', PW); sibuk(b); renderWA();
+      toast(GRUP_WA.length ? GRUP_WA.length + ' grup ditemukan. Pilih lalu Simpan grup.' : 'Tidak ada grup. Masukkan nomor SIMAK ke grup dulu.', !GRUP_WA.length); }
+    catch (err) { toast(err.message, true); sibuk(b); }
+  }
+  async function simpanGrupWA(b) {
+    const nama = id => { const o = $(id).selectedOptions[0]; return o && o.value ? o.textContent : ''; };
+    sibuk(b, 'Menyimpan…');
+    try {
+      DATA = await panggil('simpanPengaturanWA', PW, { grupCalon: $('grupCalon').value, grupCalonNama: nama('grupCalon'),
+        grupPengurus: $('grupPengurus').value, grupPengurusNama: nama('grupPengurus') });
+      render(); toast('Grup WhatsApp disimpan ✓');
+    } catch (err) { toast(err.message, true); sibuk(b); }
+  }
+  async function kirimGrupDADX(b, apa) {
+    if (!confirm(apa === 'rekap' ? 'Kirim daftar pendaftar DAD ke grup pengurus sekarang?' : 'Kirim ucapan selamat datang untuk pendaftar yang belum disambut ke grup calon peserta sekarang?')) return;
+    sibuk(b, 'Mengirim…');
+    try { DATA = await panggil('kirimGrupDAD', PW, apa); render(); toast('Terkirim ke grup ✓'); }
+    catch (err) { toast(err.message, true); sibuk(b); }
   }
   async function simpanWA(e) {
     e.preventDefault();

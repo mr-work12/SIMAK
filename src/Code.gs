@@ -2976,6 +2976,7 @@ function daftarDAD(p) {
       fotoFile.getUrl(), pdfFile.getUrl(), Number(tahun), k.json]);
   });
   try { kirimKonfirmasiDAD_(p, pdf); } catch (e) {}
+  try { grupSetelahDaftarDAD_(); } catch (e) {}
   return { nama: p.nama.trim(), grupWA: CONFIG.LINK_GRUP_WA_DAD,
            pdf: Utilities.base64Encode(pdf.getBytes()), namaPdf: pdf.getName() };
 }
@@ -3226,6 +3227,8 @@ const JENIS_WA = [
   ['peringatan', 'Peringatan tidak hadir berulang', true],
   ['sertifikat', 'Sertifikat sudah bisa diunduh', false],
   ['kaderBaru', 'Sambutan kader yang baru membuat akun (dengan motivasi & dalil)', true],
+  ['grupSambut', 'Ucapan selamat datang di grup calon peserta DAD (tiap 5 pendaftar baru)', true],
+  ['grupRekap', 'Daftar pendaftar DAD ke grup pengurus (tiap 5 pendaftar baru)', true],
   ['balas', 'Balas otomatis bila isi pesan PERSIS satu kata kunci: MENU, STATUS, JADWAL, DAFTAR, AKUN, MOTIVASI, ADMIN', false]
 ];
 function pengaturanWA_() {
@@ -3233,7 +3236,9 @@ function pengaturanWA_() {
   try { x = JSON.parse(PropertiesService.getScriptProperties().getProperty('WA_PENGATURAN') || '{}') || {}; } catch (e) {}
   const jenis = {};
   JENIS_WA.forEach(j => { jenis[j[0]] = x.jenis && typeof x.jenis[j[0]] === 'boolean' ? x.jenis[j[0]] : j[2]; });
-  return { token: String(x.token || ''), aktif: !!x.aktif, noAdmin: String(x.noAdmin || ''), jenis: jenis, rahasia: String(x.rahasia || '') };
+  return { token: String(x.token || ''), aktif: !!x.aktif, noAdmin: String(x.noAdmin || ''), jenis: jenis, rahasia: String(x.rahasia || ''),
+    grupCalon: String(x.grupCalon || ''), grupCalonNama: String(x.grupCalonNama || ''),
+    grupPengurus: String(x.grupPengurus || ''), grupPengurusNama: String(x.grupPengurusNama || '') };
 }
 /** Kode rahasia di URL webhook supaya hanya Fonnte yang bisa memicu balasan. */
 function rahasiaWA_() {
@@ -3250,6 +3255,8 @@ function infoWA_() {
   const w = pengaturanWA_();
   return { aktif: w.aktif, adaToken: !!w.token, tokenSamar: w.token ? w.token.slice(0, 3) + '•••••' + w.token.slice(-3) : '',
     noAdmin: w.noAdmin, jenis: w.jenis, webhook: urlWebhookWA_(), daftarJenis: JENIS_WA.map(j => ({ kode: j[0], label: j[1] })),
+    grupCalon: w.grupCalon, grupCalonNama: w.grupCalonNama, grupPengurus: w.grupPengurus, grupPengurusNama: w.grupPengurusNama,
+    grupDAD: (() => { try { const t = pendaftarDADTahunIni_(); return { tahun: t.tahun, total: t.semua.length, disambut: t.disambut }; } catch (e) { return null; } })(),
     log: rows_('LOGWA').slice(-8).reverse().map(r => ({ waktu: fmt_(r[0], 'dd/MM HH:mm'), jenis: r[1], tujuan: String(r[2]), jumlah: r[3], status: r[4], ket: String(r[5] || '') })) };
 }
 /** Admin menyimpan pengaturan WA. Token kosong = token lama dipakai. */
@@ -3261,8 +3268,15 @@ function simpanPengaturanWA(pw, x) {
   const token = x.hapusToken ? '' : (String(x.token || '').trim() || lama.token);
   const noAdmin = x.noAdmin !== undefined ? String(x.noAdmin || '').trim() : lama.noAdmin;
   if (noAdmin && !nomorWA_(noAdmin)) throw new Error('Nomor WA admin tidak valid.');
-  PropertiesService.getScriptProperties().setProperty('WA_PENGATURAN', JSON.stringify({
-    token: token, aktif: x.aktif !== undefined ? !!x.aktif : lama.aktif, noAdmin: noAdmin, jenis: jenis, rahasia: lama.rahasia }));
+  const grup = {};
+  ['grupCalon', 'grupPengurus'].forEach(k => {
+    const id = x[k] !== undefined ? String(x[k] || '').trim() : lama[k];
+    if (id && !grupWA_(id)) throw new Error('ID grup WhatsApp tidak valid.');
+    grup[k] = id;
+    grup[k + 'Nama'] = x[k] !== undefined ? String(x[k + 'Nama'] || '').slice(0, 100) : lama[k + 'Nama'];
+  });
+  PropertiesService.getScriptProperties().setProperty('WA_PENGATURAN', JSON.stringify(Object.assign({
+    token: token, aktif: x.aktif !== undefined ? !!x.aktif : lama.aktif, noAdmin: noAdmin, jenis: jenis, rahasia: lama.rahasia }, grup)));
   return getData(pw);
 }
 /** 0812… / +62 812… / 62812… → 62812… ; tidak valid → '' */
@@ -3272,13 +3286,18 @@ function nomorWA_(hp) {
   else if (n.indexOf('8') === 0) n = '62' + n;
   return /^62\d{8,13}$/.test(n) ? n : '';
 }
+/** ID grup WhatsApp dari Fonnte (mis. 120363xxxx@g.us) → sama; selain itu ''. */
+function grupWA_(id) {
+  const t = String(id || '').trim();
+  return /^\d[\d-]{5,40}@g\.us$/.test(t) ? t : '';
+}
 function catatWA_(jenis, tujuan, jumlah, status, ket) {
   try { sh_('LOGWA').appendRow([new Date(), jenis, "'" + tujuan, jumlah, status, String(ket || '').slice(0, 300)]); } catch (e) {}
 }
 /** Kirim ke Fonnte. paksa = abaikan sakelar aktif/jenis (untuk tombol tes). Tidak pernah melempar galat. */
 function kirimWA_(nomor, pesan, jenis, paksa) {
   const w = pengaturanWA_();
-  const daftar = (Array.isArray(nomor) ? nomor : [nomor]).map(nomorWA_).filter(Boolean)
+  const daftar = (Array.isArray(nomor) ? nomor : [nomor]).map(n => grupWA_(n) || nomorWA_(n)).filter(Boolean)
     .filter((n, i, a) => a.indexOf(n) === i);
   if (!w.token || !daftar.length) return { ok: false, alasan: !w.token ? 'Token belum diisi' : 'Nomor tidak valid' };
   if (!paksa && (!w.aktif || !w.jenis[jenis])) return { ok: false, alasan: 'Dimatikan' };
@@ -3292,7 +3311,7 @@ function kirimWA_(nomor, pesan, jenis, paksa) {
     let j = {}; try { j = JSON.parse(r.getContentText()); } catch (e) {}
     hasil = j.status ? { ok: true } : { ok: false, alasan: j.reason || j.detail || ('HTTP ' + r.getResponseCode()) };
   } catch (e) { hasil = { ok: false, alasan: e.message }; }
-  catatWA_(jenis, daftar.length > 1 ? daftar.length + ' nomor' : daftar[0], daftar.length, hasil.ok ? 'Terkirim' : 'Gagal', hasil.alasan || '');
+  catatWA_(jenis, daftar.length > 1 ? daftar.length + ' nomor' : (grupWA_(daftar[0]) ? 'grup ' + daftar[0].slice(-12) : daftar[0]), daftar.length, hasil.ok ? 'Terkirim' : 'Gagal', hasil.alasan || '');
   return hasil;
 }
 function tesWA(pw, nomor) {
@@ -3305,6 +3324,81 @@ function tesWA(pw, nomor) {
   if (!h.ok) throw new Error('Gagal mengirim: ' + h.alasan);
   const d = getData(pw); d.hasilTesWA = n; return d;
 }
+// ----- Grup WhatsApp DAD: sambutan (grup calon peserta) & rekap pendaftar (grup pengurus) -----
+/** Admin: minta Fonnte memperbarui lalu mengambil daftar grup yang diikuti nomor tersambung. */
+function daftarGrupWA(pw) {
+  cek_(pw);
+  const w = pengaturanWA_();
+  if (!w.token) throw new Error('Isi dan simpan token Fonnte dulu.');
+  const opsi = { method: 'post', muteHttpExceptions: true, headers: { Authorization: w.token } };
+  try { UrlFetchApp.fetch('https://api.fonnte.com/fetch-group', opsi); } catch (e) {}
+  let j = {};
+  try { j = JSON.parse(UrlFetchApp.fetch('https://api.fonnte.com/get-whatsapp-group', opsi).getContentText()) || {}; } catch (e) {}
+  if (!j.status || !Array.isArray(j.data)) throw new Error('Gagal mengambil grup dari Fonnte: ' + (j.detail || j.reason || 'tidak ada respons') +
+    '. Pastikan nomor WA SIMAK sudah masuk ke grupnya, tunggu 1 menit, lalu coba lagi.');
+  return j.data.filter(g => grupWA_(g.id)).map(g => ({ id: String(g.id), nama: String(g.name || g.id).slice(0, 100) }))
+    .sort((a, b) => a.nama.localeCompare(b.nama));
+}
+/** Pendaftar DAD tahun ini (urut daftar) + berapa yang sudah disambut di grup. */
+function pendaftarDADTahunIni_() {
+  const tahun = Number(Utilities.formatDate(new Date(), CONFIG.ZONA_WAKTU, 'yyyy'));
+  const semua = rows_('DAD').filter(r => Number(r[27]) === tahun);
+  const disambut = Number(PropertiesService.getScriptProperties().getProperty('WA_GRUP_DAD_' + tahun) || 0);
+  return { tahun: tahun, semua: semua, disambut: Math.min(disambut, semua.length) };
+}
+function pesanSambutGrupDAD_(baru) {
+  return 'Assalamu\'alaikum warahmatullahi wabarakatuh 👋\n\n' +
+    'Selamat datang di grup *Calon Peserta Darul Arqam Dasar (DAD)* ' + CONFIG.PENYELENGGARA + '.\n\n' +
+    'Terima kasih sudah mendaftar dan bergabung:\n' +
+    baru.map((r, i) => (i + 1) + '. *' + String(r[1]).trim() + '*' + (r[3] ? ' (' + r[3] + ')' : '')).join('\n') +
+    '\n\nInformasi jadwal, persiapan, dan teknis DAD akan disampaikan di grup ini. Mohon aktif memantau grup ya 🤝\n\n' +
+    'Fastabiqul khairat! ✊\nWassalamu\'alaikum warahmatullahi wabarakatuh';
+}
+function pesanRekapGrupDAD_(t) {
+  const aktif = t.semua.filter(r => TAHAP_GAGAL.indexOf(String(r[10])) < 0);
+  return '📋 *Rekap Pendaftar DAD ' + t.tahun + '*\nTotal: *' + aktif.length + ' orang*\n\n' +
+    aktif.map((r, i) => (i + 1) + '. ' + String(r[1]).trim() + ' — ' + (r[3] || '-') + (r[4] ? ', smt ' + r[4] : '') +
+      ' — ' + (String(r[6] || '').trim() || '-') + (r[10] && r[10] !== 'Terdaftar' ? ' [' + r[10] + ']' : '')).join('\n') +
+    '\n\nDetail lengkap: SIMAK → Admin → tab DAD';
+}
+/** Dipanggil setelah pendaftaran DAD: tiap terkumpul 5 pendaftar yang belum disambut → sambut di grup calon + rekap ke grup pengurus. */
+function grupSetelahDaftarDAD_() {
+  const w = pengaturanWA_();
+  if (!w.token || !w.aktif || (!w.grupCalon && !w.grupPengurus)) return;
+  let t, baru = [];
+  kunci_(() => {
+    t = pendaftarDADTahunIni_();
+    if (t.semua.length - t.disambut < 5) return;
+    baru = t.semua.slice(t.disambut);
+    PropertiesService.getScriptProperties().setProperty('WA_GRUP_DAD_' + t.tahun, String(t.semua.length));
+  });
+  if (!baru.length) return;
+  if (w.grupCalon) kirimWA_(w.grupCalon, pesanSambutGrupDAD_(baru), 'grupSambut');
+  if (w.grupPengurus) kirimWA_(w.grupPengurus, pesanRekapGrupDAD_(t), 'grupRekap');
+}
+/** Admin: kirim sekarang. apa = 'sambut' (pendaftar yang belum disambut) | 'rekap' (daftar lengkap ke grup pengurus). */
+function kirimGrupDAD(pw, apa) {
+  cek_(pw);
+  const w = pengaturanWA_();
+  if (!w.token) throw new Error('Isi dan simpan token Fonnte dulu.');
+  let h;
+  if (apa === 'rekap') {
+    if (!w.grupPengurus) throw new Error('Pilih & simpan grup pengurus dulu.');
+    const t = pendaftarDADTahunIni_();
+    if (!t.semua.length) throw new Error('Belum ada pendaftar DAD tahun ' + t.tahun + '.');
+    h = kirimWA_(w.grupPengurus, pesanRekapGrupDAD_(t), 'grupRekap', true);
+  } else {
+    if (!w.grupCalon) throw new Error('Pilih & simpan grup calon peserta dulu.');
+    let t, baru = [];
+    kunci_(() => { t = pendaftarDADTahunIni_(); baru = t.semua.slice(t.disambut); });
+    if (!baru.length) throw new Error('Semua pendaftar sudah disambut di grup.');
+    h = kirimWA_(w.grupCalon, pesanSambutGrupDAD_(baru), 'grupSambut', true);
+    if (h.ok) kunci_(() => PropertiesService.getScriptProperties().setProperty('WA_GRUP_DAD_' + t.tahun, String(t.disambut + baru.length)));
+  }
+  if (!h.ok) throw new Error('Gagal mengirim: ' + h.alasan);
+  return getData(pw);
+}
+
 // ----- Balas otomatis: Fonnte mengirim pesan masuk ke webhook (doPost) -----
 function doPost(e) {
   try {
