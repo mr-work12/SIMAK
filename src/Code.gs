@@ -3226,7 +3226,7 @@ const JENIS_WA = [
   ['peringatan', 'Peringatan tidak hadir berulang', true],
   ['sertifikat', 'Sertifikat sudah bisa diunduh', false],
   ['kaderBaru', 'Sambutan kader yang baru membuat akun (dengan motivasi & dalil)', true],
-  ['balas', 'Balas otomatis pesan masuk berisi kata kunci (MENU, STATUS, JADWAL, DAFTAR, AKUN, ADMIN)', false]
+  ['balas', 'Balas otomatis pesan masuk berisi kata kunci (MENU, STATUS, JADWAL, DAFTAR, AKUN, MOTIVASI, ADMIN)', false]
 ];
 function pengaturanWA_() {
   let x = {};
@@ -3341,7 +3341,7 @@ function balasanWA_(sender, pesan, nama) {
   const url = urlAplikasi_(), w = pengaturanWA_();
   const MENU = '📋 *Menu ' + CONFIG.NAMA_SISTEM + ' — ' + CONFIG.PENYELENGGARA + '*\nBalas dengan kata berikut:\n\n' +
     '*STATUS* — cek status pendaftaran DAD / akun kader\n*JADWAL* — kegiatan terdekat\n*DAFTAR* — link pendaftaran DAD\n' +
-    '*AKUN* — link masuk SIMAK & lupa PIN\n*ADMIN* — kontak pengurus';
+    '*AKUN* — link masuk SIMAK & lupa PIN\n*MOTIVASI* — motivasi & dalil penyemangat\n*ADMIN* — kontak pengurus';
   if (['menu', 'simak', 'info', 'help', 'bantuan'].indexOf(kata) >= 0) return 'Assalamu\'alaikum' + (nama ? ', ' + nama : '') + ' 👋\n\n' + MENU;
   if (['status', 'cek'].indexOf(kata) >= 0) {
     const kader = rows_('PESERTA').find(r => hpSama_(sender, r[4]));
@@ -3375,6 +3375,9 @@ function balasanWA_(sender, pesan, nama) {
   if (['akun', 'masuk', 'login', 'pin', 'link'].indexOf(kata) >= 0)
     return '🔑 *Masuk SIMAK*\n' + url + '/?masuk\n\nMasuk dengan email + NPM/NIA + PIN. Lupa PIN? Tekan *Lupa PIN?* di halaman masuk, kode dikirim ke email' +
       (w.jenis.pin ? ' dan WhatsApp' : '') + '.\n\nSudah DAD tapi belum punya akun? ' + url + '/?kader';
+  if (['motivasi', 'semangat', 'dalil', 'quote', 'nasihat', 'nasehat'].indexOf(kata) >= 0)
+    return 'Assalamu\'alaikum' + (nama ? ', ' + nama : '') + ' 🌱\n\n' + teksDalil_(DALIL_KADER.concat(DALIL_DAD)) +
+      '\n\n_Balas *MOTIVASI* lagi lain waktu untuk motivasi lainnya._';
   if (['admin', 'cp', 'kontak', 'pengurus'].indexOf(kata) >= 0)
     return '📞 *Kontak ' + CONFIG.PENYELENGGARA + '*\n' + (w.noAdmin ? 'WhatsApp: wa.me/' + nomorWA_(w.noAdmin) + '\n' : '') + 'Email: pkimmfaiumbengkulu@gmail.com';
   return '';
@@ -3961,7 +3964,15 @@ const DALIL_KADER = [
   { arab: 'فَاسْتَبِقُوا الْخَيْرَاتِ',
     arti: 'Maka berlomba-lombalah kamu dalam kebaikan.',
     sumber: 'QS. Al-Baqarah: 148',
-    pesan: 'Fastabiqul khairat bukan sekadar slogan, tetapi cara hidup kader: selalu menjadi yang terdepan dalam kebaikan.' }
+    pesan: 'Fastabiqul khairat bukan sekadar slogan, tetapi cara hidup kader: selalu menjadi yang terdepan dalam kebaikan.' },
+  { arab: 'وَقُلِ اعْمَلُوا فَسَيَرَى اللَّهُ عَمَلَكُمْ وَرَسُولُهُ وَالْمُؤْمِنُونَ',
+    arti: 'Dan katakanlah: Bekerjalah kamu, maka Allah, Rasul-Nya, dan orang-orang mukmin akan melihat pekerjaanmu itu.',
+    sumber: 'QS. At-Taubah: 105',
+    pesan: 'Kader tidak cukup pandai berbicara. Buktikan lewat kerja nyata, sekecil apa pun, dan biarkan Allah yang menilai.' },
+  { arab: 'وَالْعَصْرِ ۝ إِنَّ الْإِنْسَانَ لَفِي خُسْرٍ ۝ إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ',
+    arti: 'Demi masa. Sesungguhnya manusia benar-benar dalam kerugian, kecuali orang-orang yang beriman dan beramal saleh serta saling menasihati untuk kebenaran dan saling menasihati untuk kesabaran.',
+    sumber: 'QS. Al-\'Ashr: 1–3',
+    pesan: 'Waktu terus berjalan. Isi dengan iman, amal, dan saling menguatkan sesama kader agar kita tidak termasuk orang yang merugi.' }
 ];
 const DALIL_DAD = [
   { arab: 'مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ',
