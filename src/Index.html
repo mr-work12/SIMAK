@@ -155,7 +155,7 @@
   .maskot-ikut{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;align-items:flex-end;
     pointer-events:none;opacity:0;transform:translateY(30px) scale(.9);transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1)}
   .maskot-ikut.tampil{opacity:1;transform:none}
-  .maskot-ikut.tampil .mi-badan,.maskot-ikut.tampil .mi-tutup,.maskot-ikut.tampil .mi-gelembung.buka{pointer-events:auto}
+  .maskot-ikut.tampil .mi-badan,.maskot-ikut.tampil .mi-gelembung.buka{pointer-events:auto}
   .mi-badan{position:relative;width:70px;height:93px;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;
     transition:transform .5s cubic-bezier(.3,1.5,.5,1)}
   .mi-badan:before{content:'';position:absolute;left:-8%;right:-8%;bottom:-6px;height:16px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.28),rgba(0,0,0,0) 70%)}
@@ -171,12 +171,13 @@
     padding:8px 12px;border-radius:14px 14px 4px 14px;box-shadow:0 6px 18px rgba(0,0,0,.22);border:1.5px solid #f2c200;
     opacity:0;transform:translateY(6px) scale(.95);transform-origin:100% 100%;transition:opacity .25s,transform .25s}
   .mi-gelembung.buka{opacity:1;transform:none}
-  .mi-tutup{position:absolute;right:-2px;bottom:96px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(59,10,10,.75);color:#fff;
-    font-size:15px;line-height:22px;padding:0;cursor:pointer;opacity:.75}
-  @media(max-width:700px){.mi-tutup{bottom:80px}}
-  .mi-gelembung.buka ~ .mi-tutup{display:none}
-  @media(min-width:701px){.mi-badan{width:100px;height:132px}.mi-tutup{bottom:116px}}
+  @media(min-width:701px){.mi-badan{width:100px;height:132px}}
   @media(prefers-reduced-motion:reduce){.mi-badan img{animation:none !important}.mi-badan{transition:none}}
+  /* saat mengisi kolom di bagian bawah layar (keyboard HP terbuka), maskot pindah ke pojok kanan atas supaya kolom tidak tertutup */
+  .maskot-ikut{transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1),top .35s ease,bottom .35s ease}
+  .maskot-ikut.atas{bottom:auto;top:var(--mi-atas,118px);flex-direction:column-reverse}
+  .maskot-ikut.atas .mi-gelembung{margin:8px 4px 0 0;border-radius:14px 4px 14px 14px;transform-origin:100% 0}
+  .maskot-ikut.membimbing .mi-gelembung{background:#fff8dc}
   @media print{.maskot-ikut{display:none !important}}
   .awal-kembali{display:block;margin:0 0 6px}
   /* --- perapian --- */
@@ -626,7 +627,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 09.40</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 10.05</p>
     </div>
   </section>
   <div class="tengah">
@@ -636,7 +637,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 09.40</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 10.05</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1514,7 +1515,6 @@
 <!-- Maskot pendamping: ikut menemani saat peserta menggulir halaman publik -->
 <div id="maskotIkut" class="maskot-ikut" aria-live="polite">
   <div class="mi-gelembung" id="miGelembung"></div>
-  <button type="button" class="mi-tutup" onclick="tutupMaskotIkut()" aria-label="Sembunyikan maskot">×</button>
   <div class="mi-badan" id="miBadan" role="button" tabindex="0" aria-label="Maskot pendamping, ketuk untuk tips" onclick="sapaMaskotIkut()"
     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sapaMaskotIkut()}">
     <img class="mi-putra" alt="" draggable="false"><img class="mi-putri" alt="" draggable="false">
@@ -1679,7 +1679,6 @@
   }
   // ----- Maskot pendamping: muncul di pojok saat maskot beranda tidak terlihat, bergoyang mengikuti arah gulir, memberi tips sesuai bagian -----
   const MI = { tutup: false, konteks: '', tipe: 0, timer: null, gulirY: 0, gulirT: null };
-  try { MI.tutup = sessionStorage.getItem('maskotIkutTutup') === '1'; } catch (e) {}
   const TIPS_MI = {
     beranda: ['Ayo daftar DAD! Tekan tombol kuning di atas 👆', 'Sudah ikut DAD? Buat akun kader ya 🔑'],
     dadA: ['Isi data diri dengan benar ya 😊', 'Pas foto 3×4 latar merah 📸'],
@@ -1710,10 +1709,8 @@
     return 'masuk';
   }
   function bolehMaskotIkut() {
-    if (MI.tutup || !$('layarAwal').classList.contains('tampil')) return false;
+    if (!$('layarAwal').classList.contains('tampil')) return false;
     if (EDIT_DAD && EDIT_DAD.admin) return false;
-    const a = document.activeElement;
-    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && innerWidth < 700) return false;   // keyboard HP terbuka: jangan menutupi isian
     if ($('layarAwal').classList.contains('mode-beranda')) return !terlihatDiLayar($('maskotPanggung'));
     return true;
   }
@@ -1721,23 +1718,80 @@
     const g = $('miGelembung'); g.textContent = teks; g.classList.add('buka');
     clearTimeout(MI.timer); MI.timer = setTimeout(() => g.classList.remove('buka'), lama || 4500);
   }
+  // Bimbingan per kolom: muncul saat peserta mengetuk kolom isian
+  const JENJANG_MI = { SD: 'SD/MI', SMP: 'SMP/MTs', SMA: 'SMA/SMK/MA', PT: 'kampus' };
+  const BIMBING_MI = {
+    nama: 'Tulis nama lengkap sesuai KTM, bukan nama panggilan ✍️', jk: 'Pilih jenis kelaminmu 🙂',
+    npm: 'NPM ada di KTM atau KRS-mu 🎓', nim: 'NPM atau NIA ini dipakai untuk masuk nanti 🔑',
+    tempatLahir: 'Cukup nama kota/kabupaten, mis. Bengkulu 🏙️', tglLahir: 'Pilih tanggal lahir dari kalender 📅', tanggalLahir: 'Pilih tanggal lahir dari kalender 📅',
+    alamatAsal: 'Alamat daerah asal / kampung halaman 🏡', alamat: 'Alamat tinggal sekarang (rumah/kos) 📍',
+    hp: 'Nomor WhatsApp aktif — info DAD dikirim ke sini 📱', email: 'Email aktif — formulir PDF dikirim ke sini 📩',
+    sosmed: 'Mis. IG @namakamu 📷', motto: 'Motto hidupmu, singkat saja ✨', pt: 'Mis. Universitas Muhammadiyah Bengkulu 🏛️',
+    prodi: 'Pilih program studimu 📚', prodiLain: 'Tulis nama prodi & fakultasmu', semester: 'Semester sekarang, angka saja (mis. 1)',
+    foto: 'Pas foto 3×4 latar merah, wajah terlihat jelas 📸', target: 'Apa yang ingin kamu capai sebagai kader? 🎯',
+    motivasi: 'Kenapa kamu ingin jadi kader IMM? Ceritakan dengan jujur 💪', setuju: 'Centang kalau kamu siap ikut seluruh rangkaian DAD ✊',
+    tahunDad: 'Tahun kamu mengikuti DAD 🗓️', syahadah: 'Sudah menerima syahadah/sertifikat DAD?', pin: 'Buat PIN 6 angka — jangan dibagikan ke siapa pun 🔒',
+    pin2: 'Ketik ulang PIN yang sama 🔒', pEmail: 'Email yang kamu pakai saat membuat akun 📧', pNim: 'NPM atau NIA yang didaftarkan 🎓',
+    pPin: 'Belum punya PIN? Kosongkan saja, nanti dibuatkan 😉', emailStatusDAD: 'Email atau No. WA yang dipakai saat mendaftar DAD 🔎',
+    'isiOrganisasi.organisasi': 'Nama organisasi, mis. OSIS, Rohis, IPM — boleh kosong 👍', 'isiOrganisasi.jabatan': 'Jabatanmu, mis. Anggota, Sekretaris',
+    'isiOrganisasi.periode': 'Tahun aktif, mis. 2021–2022', 'isiBuku.judul': 'Judul buku yang pernah kamu baca — boleh kosong 📖',
+    'isiBuku.penulis': 'Nama penulis bukunya ✒️', 'isiKarya.judul': 'Tulisan/karya yang pernah terbit — boleh kosong 📝',
+    'isiKarya.media': 'Terbit di mana? Mis. Instagram, koran, jurnal, blog'
+  };
+  function bimbinganKolom(el) {
+    const tabel = el.closest && el.closest('.tabel-isi'), k = el.dataset && el.dataset.k;
+    if (tabel && k) {
+      if (tabel.id === 'isiPendidikan') {
+        const j = (el.closest('.baris') || {}).dataset ? el.closest('.baris').dataset.jenjang : '';
+        if (k === 'lulus') return j === 'PT' ? 'Masih kuliah? Tahun lulus kampus boleh dikosongkan 👍' : 'Tahun lulus 4 angka, mis. 2019 🗓️';
+        return 'Tulis nama ' + (JENJANG_MI[j] || 'sekolah') + ' tempatmu belajar 🏫';
+      }
+      return BIMBING_MI[tabel.id + '.' + k] || '';
+    }
+    return BIMBING_MI[el.name] || BIMBING_MI[el.id] || '';
+  }
+  function letakMaskotIkut() {
+    const el = $('maskotIkut'), a = document.activeElement, tinggi = window.visualViewport ? visualViewport.height : innerHeight;
+    const isi = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && $('layarAwal').contains(a);
+    let atas = false;
+    if (isi) { const r = a.getBoundingClientRect(); atas = r.bottom > tinggi - 190 && r.top > 200; }   // kolom berada di area pojok bawah tempat maskot
+    if (atas) { const h = document.querySelector('#layarAwal header.awal-bar'); el.style.setProperty('--mi-atas', ((h && h.getBoundingClientRect().bottom > 0 ? h.getBoundingClientRect().bottom : 0) + 8) + 'px'); }
+    el.classList.toggle('atas', atas);
+  }
   function perbaruiMaskotIkut() {
     const el = $('maskotIkut'); if (!el) return;
     const tampil = bolehMaskotIkut();
     el.classList.toggle('tampil', tampil);
     if (!tampil) { $('miGelembung').classList.remove('buka'); return; }
+    letakMaskotIkut();
+    if (MI.bimbing) return;                     // sedang membimbing satu kolom: jangan diganti tips bagian
     const k = konteksMaskotIkut();
     if (k !== MI.konteks) { MI.konteks = k; MI.tipe = 0; bicaraMaskotIkut(TIPS_MI[k][0]); }
+  }
+  function bimbingMaskotIkut(e) {
+    const a = e.target; if (!a || !/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || !$('layarAwal').contains(a)) return;
+    const teks = bimbinganKolom(a); if (!teks) return;
+    MI.bimbing = true; $('maskotIkut').classList.add('membimbing');
+    bicaraMaskotIkut(teks, 600000);
+    MI.giliran = !MI.giliran; const im = $('miBadan').querySelector(MI.giliran ? '.mi-putra' : '.mi-putri');
+    [im].forEach(x => { if (!x) return; x.classList.remove('lompat'); void x.offsetWidth; x.classList.add('lompat');
+      x.addEventListener('animationend', () => x.classList.remove('lompat'), { once: true }); });
+    perbaruiMaskotIkut();
+  }
+  function lepasBimbingMaskotIkut() {
+    setTimeout(() => {
+      const a = document.activeElement;
+      if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && $('layarAwal').contains(a)) return;   // pindah ke kolom lain: biar bimbingMaskotIkut yang urus
+      MI.bimbing = false; $('maskotIkut').classList.remove('membimbing');
+      clearTimeout(MI.timer); MI.timer = setTimeout(() => $('miGelembung').classList.remove('buka'), 2500);
+      perbaruiMaskotIkut();
+    }, 150);
   }
   function sapaMaskotIkut() {
     const t = TIPS_MI[MI.konteks] || TIPS_MI.beranda;
     MI.tipe = (MI.tipe + 1) % t.length; bicaraMaskotIkut(t[MI.tipe]);
     $('miBadan').querySelectorAll('img').forEach(im => { im.classList.remove('lompat'); void im.offsetWidth; im.classList.add('lompat');
       im.addEventListener('animationend', () => im.classList.remove('lompat'), { once: true }); });
-  }
-  function tutupMaskotIkut() {
-    MI.tutup = true; try { sessionStorage.setItem('maskotIkutTutup', '1'); } catch (e) {}
-    perbaruiMaskotIkut(); toast('Maskot disembunyikan. Muncul lagi saat SIMAK dibuka ulang.');
   }
   (function pasangMaskotIkut() {
     const asal = document.querySelectorAll('#maskotPanggung img'), tuju = document.querySelectorAll('#miBadan img');
@@ -1751,8 +1805,9 @@
       nanti();
     }, { passive: true });
     addEventListener('resize', nanti);
-    document.addEventListener('focusin', () => setTimeout(nanti, 50));
-    document.addEventListener('focusout', () => setTimeout(nanti, 120));
+    document.addEventListener('focusin', e => { bimbingMaskotIkut(e); setTimeout(nanti, 350); });
+    document.addEventListener('focusout', lepasBimbingMaskotIkut);
+    if (window.visualViewport) visualViewport.addEventListener('resize', nanti);
     document.addEventListener('click', () => setTimeout(nanti, 80));
     setTimeout(nanti, 3200);
   })();
