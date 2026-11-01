@@ -580,10 +580,14 @@
         try { new Function(t); } catch (x) { e0 = x; }
         if (e0) {
           var L = t.split('\n');
-          for (var k = 1; k <= L.length; k++) {
-            try { new Function(L.slice(0, k).join('\n')); }
-            catch (x) { if (x.message === e0.message) { err += ' → baris skrip ' + k + ': ' + L[k - 1].trim().slice(0, 140); break; } }
-          }
+          // cari baris pertama yang benar-benar salah (bukan sekadar "belum selesai"): pencarian biner atas potongan awal skrip.
+          // Potongan dibungkus "(function(){" tanpa penutup, jadi tidak pernah dijalankan — hanya diperiksa tata bahasanya.
+          var cuma = /end of input|Unterminated/i;
+          var salah = function (k) { try { (0, eval)('(function(){\n' + L.slice(0, k).join('\n')); return null; } catch (x) { return cuma.test(x.message) ? null : x.message; } };
+          var lo = 1, hi = L.length, pesan = null;
+          if (salah(hi)) { while (lo < hi) { var mid = (lo + hi) >> 1; if (salah(mid)) hi = mid; else lo = mid + 1; } pesan = salah(lo); }
+          err += pesan ? ' → baris skrip ' + lo + ' (' + pesan + '): ' + (L[lo - 2] ? L[lo - 2].trim().slice(0, 90) + ' ⏎ ' : '') + L[lo - 1].trim().slice(0, 160)
+                       : ' → skrip utama: ' + e0.message + ' · ' + t.length + ' huruf, ' + L.length + ' baris · akhir: ' + L[L.length - 1].trim().slice(0, 80);
         }
       } catch (x) {}
     }
@@ -654,7 +658,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 14.00</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 14.40</p>
     </div>
   </section>
   <div class="tengah">
@@ -664,7 +668,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 14.00</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 14.40</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -4833,16 +4837,24 @@
   let SARING_GALERI = '';
   function renderGaleriAdmin() {
     const sel = $('pilihKegGaleri'), lama = sel.value;
-    sel.innerHTML = '<option value="">📷 Di luar kegiatan (rapat, silaturahmi, aksi, dll.)</option>' +
-      '<optgroup label="Kegiatan">' + DATA.kegiatan.map(k => `<option value="${esc(k.id)}">${esc(tglIndo(k.tanggal))} · ${esc(k.nama)}</option>`).join('') + '</optgroup>';
+    let opsiGaleri = '<option value="">📷 Di luar kegiatan (rapat, silaturahmi, aksi, dll.)</option>';
+    DATA.kegiatan.forEach(k => { opsiGaleri += '<option value="' + esc(k.id) + '">📅 ' + esc(tglIndo(k.tanggal)) + ' · ' + esc(k.nama) + '</option>'; });
+    sel.innerHTML = opsiGaleri;
     sel.value = lama; aturFormGaleri();
     $('maksMb').textContent = DATA.config.maksUploadMb || 20;
 
     const semua = DATA.galeri || [], nLuar = semua.filter(m => m.luar).length;
     const g = semua.filter(m => !SARING_GALERI || (SARING_GALERI === 'luar' ? m.luar : !m.luar));
-    const chip = (v, t) => `<button type="button" class="btn ${SARING_GALERI === v ? '' : 'sek'} kecil" onclick="SARING_GALERI='${v}';renderGaleriAdmin()">${t}</button>`;
-    $('listGaleri').innerHTML = (semua.length ? `<div class="baris-aksi" style="margin-bottom:10px">${chip('', 'Semua (' + semua.length + ')')}${chip('keg', 'Kegiatan (' + (semua.length - nLuar) + ')')}${chip('luar', 'Di luar kegiatan (' + nLuar + ')')}</div>` : '') +
-      (g.length ? '<div class="grid-media">' + g.map(m => `
+    let saring = '';
+    if (semua.length) {
+      saring = '<div class="baris-aksi" style="margin-bottom:10px">';
+      [['', 'Semua', semua.length], ['keg', 'Kegiatan', semua.length - nLuar], ['luar', 'Di luar kegiatan', nLuar]].forEach(c => {
+        saring += '<button type="button" class="btn kecil' + (SARING_GALERI === c[0] ? '' : ' sek') + '" data-saring="' + c[0] + '">' + c[1] + ' (' + c[2] + ')</button>';
+      });
+      saring += '</div>';
+    }
+    let isiGaleri = '';
+    if (g.length) isiGaleri = '<div class="grid-media">' + g.map(m => `
       <div class="media">
         ${m.tipe === 'foto'
           ? `<div class="thumb" style="background-image:url('${srcFoto(m, 400)}')"></div>`
@@ -4852,8 +4864,10 @@
         <div class="ket"><b>${esc(m.judul || (m.tipe === 'foto' ? 'Foto' : 'Video'))}</b><br>
           <small>${m.luar ? '📷 ' : '📅 '}${esc(m.namaKeg || (m.luar ? 'Di luar kegiatan' : 'Kegiatan'))}${m.tanggal ? ' · ' + esc(tglIndo(m.tanggal)) : ''}</small>
           <button class="btn hapus kecil" onclick="hapusMedia('${esc(m.id)}')">Hapus</button></div>
-      </div>`).join('') + '</div>'
-      : '<p class="kosong">' + (semua.length ? 'Tidak ada item pada pilihan ini.' : 'Galeri masih kosong.') + '</p>');
+      </div>`).join('') + '</div>';
+    else isiGaleri = '<p class="kosong">' + (semua.length ? 'Tidak ada item pada pilihan ini.' : 'Galeri masih kosong.') + '</p>';
+    $('listGaleri').innerHTML = saring + isiGaleri;
+    $('listGaleri').querySelectorAll('[data-saring]').forEach(b => { b.onclick = () => { SARING_GALERI = b.dataset.saring; renderGaleriAdmin(); }; });
   }
 
   function cetak() {
