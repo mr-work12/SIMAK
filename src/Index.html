@@ -151,6 +151,33 @@
   .maskot-tip{display:block;margin-top:14px;font-size:11px;color:rgba(255,255,255,.55)}
   @media(min-width:701px){.maskot-panggung{height:330px}}
   @media(prefers-reduced-motion:reduce){.maskot-panggung img,.maskot-bintang i{animation:none !important}}
+  /* --- maskot pendamping yang ikut menggulir (pojok kanan bawah) --- */
+  .maskot-ikut{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;align-items:flex-end;
+    pointer-events:none;opacity:0;transform:translateY(30px) scale(.9);transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1)}
+  .maskot-ikut.tampil{opacity:1;transform:none}
+  .maskot-ikut.tampil .mi-badan,.maskot-ikut.tampil .mi-tutup,.maskot-ikut.tampil .mi-gelembung.buka{pointer-events:auto}
+  .mi-badan{position:relative;width:70px;height:93px;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none;
+    transition:transform .5s cubic-bezier(.3,1.5,.5,1)}
+  .mi-badan:before{content:'';position:absolute;left:-8%;right:-8%;bottom:-6px;height:16px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.28),rgba(0,0,0,0) 70%)}
+  .mi-badan img{position:absolute;height:auto;user-select:none;-webkit-user-drag:none;transform-origin:50% 100%;
+    filter:drop-shadow(0 0 1px rgba(255,226,140,.9)) drop-shadow(0 3px 4px rgba(0,0,0,.3));animation:maskotNapas 2.6s ease-in-out infinite alternate}
+  .mi-putra{left:0;top:.8%;width:48.2%;z-index:2}
+  .mi-putri{left:46.3%;top:9.2%;width:53.6%;z-index:1}
+  .mi-badan img.mi-putri{animation-delay:-1.3s}
+  .maskot-ikut.turun .mi-badan{transform:rotate(-6deg) translateY(4px)}
+  .maskot-ikut.naik .mi-badan{transform:rotate(6deg) translateY(-6px)}
+  .mi-badan img.lompat{animation:maskotLompat .65s cubic-bezier(.3,.7,.4,1)}
+  .mi-gelembung{position:relative;max-width:min(230px,64vw);margin:0 4px 8px 0;background:#fffdf8;color:#7a1414;font-weight:700;font-size:12.5px;line-height:1.35;
+    padding:8px 12px;border-radius:14px 14px 4px 14px;box-shadow:0 6px 18px rgba(0,0,0,.22);border:1.5px solid #f2c200;
+    opacity:0;transform:translateY(6px) scale(.95);transform-origin:100% 100%;transition:opacity .25s,transform .25s}
+  .mi-gelembung.buka{opacity:1;transform:none}
+  .mi-tutup{position:absolute;right:-2px;bottom:96px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(59,10,10,.75);color:#fff;
+    font-size:15px;line-height:22px;padding:0;cursor:pointer;opacity:.75}
+  @media(max-width:700px){.mi-tutup{bottom:80px}}
+  .mi-gelembung.buka ~ .mi-tutup{display:none}
+  @media(min-width:701px){.mi-badan{width:100px;height:132px}.mi-tutup{bottom:116px}}
+  @media(prefers-reduced-motion:reduce){.mi-badan img{animation:none !important}.mi-badan{transition:none}}
+  @media print{.maskot-ikut{display:none !important}}
   .awal-kembali{display:block;margin:0 0 6px}
   /* --- perapian --- */
   .awal-isi{max-width:720px}
@@ -599,7 +626,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 28 Okt 2026 · 20.45</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 09.40</p>
     </div>
   </section>
   <div class="tengah">
@@ -609,7 +636,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 28 Okt 2026 · 20.45</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 09.40</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1484,6 +1511,15 @@
 </div>
 
 <div id="toast"></div>
+<!-- Maskot pendamping: ikut menemani saat peserta menggulir halaman publik -->
+<div id="maskotIkut" class="maskot-ikut" aria-live="polite">
+  <div class="mi-gelembung" id="miGelembung"></div>
+  <button type="button" class="mi-tutup" onclick="tutupMaskotIkut()" aria-label="Sembunyikan maskot">×</button>
+  <div class="mi-badan" id="miBadan" role="button" tabindex="0" aria-label="Maskot pendamping, ketuk untuk tips" onclick="sapaMaskotIkut()"
+    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sapaMaskotIkut()}">
+    <img class="mi-putra" alt="" draggable="false"><img class="mi-putri" alt="" draggable="false">
+  </div>
+</div>
 
 <script>
   window.__SIMAK_MULAI = true;
@@ -1641,6 +1677,85 @@
     const g = $('maskotGelembung'); iSapaMaskot = (iSapaMaskot + 1) % SAPAAN_MASKOT.length; g.classList.add('ganti');
     setTimeout(() => { g.textContent = SAPAAN_MASKOT[iSapaMaskot]; g.classList.remove('ganti'); }, 220);
   }
+  // ----- Maskot pendamping: muncul di pojok saat maskot beranda tidak terlihat, bergoyang mengikuti arah gulir, memberi tips sesuai bagian -----
+  const MI = { tutup: false, konteks: '', tipe: 0, timer: null, gulirY: 0, gulirT: null };
+  try { MI.tutup = sessionStorage.getItem('maskotIkutTutup') === '1'; } catch (e) {}
+  const TIPS_MI = {
+    beranda: ['Ayo daftar DAD! Tekan tombol kuning di atas 👆', 'Sudah ikut DAD? Buat akun kader ya 🔑'],
+    dadA: ['Isi data diri dengan benar ya 😊', 'Pas foto 3×4 latar merah 📸'],
+    dadB: ['Riwayat pendidikan SD sampai PT wajib diisi 📚', 'Masih kuliah? Tahun lulus PT boleh kosong 👍'],
+    dadC: ['Organisasi, buku & karya boleh dikosongkan kalau belum ada 👍'],
+    dadD: ['Tulis target & motivasimu dengan jujur ✍️', 'Terakhir: centang komitmen, lalu tekan Kirim 🚀'],
+    dadKirim: ['Centang komitmen, lalu tekan Kirim 🚀', 'Formulir PDF otomatis dikirim ke emailmu 📩'],
+    sukses: ['Jangan lupa gabung grup WhatsApp ya! 👆', 'Simpan / cetak formulirmu 🖨️'],
+    status: ['Masukkan email atau No. HP yang didaftarkan 🔎'],
+    kader: ['NPM/NIA ini dipakai untuk masuk nanti 🔑'],
+    pilih: ['Belum ikut DAD? Pilih Daftar DAD 📝'],
+    masuk: ['Belum punya PIN? Kosongkan saja, nanti dibuatkan 😉', 'Lupa PIN? Tekan "Lupa PIN?" 🔐']
+  };
+  function terlihatDiLayar(el) { if (!el || !el.offsetParent) return false; const r = el.getBoundingClientRect(); return r.bottom > 40 && r.top < innerHeight - 40; }
+  function konteksMaskotIkut() {
+    if ($('layarAwal').classList.contains('mode-beranda')) return 'beranda';
+    if (!$('boxSuksesDAD').hidden) return 'sukses';
+    if (!$('boxStatusDAD').hidden) return 'status';
+    if (!$('boxDaftar').hidden) return 'kader';
+    if (!$('boxPilihDaftar').hidden) return 'pilih';
+    if (!$('boxDaftarDAD').hidden) {
+      const garis = innerHeight * 0.45, f = $('formDAD');
+      const setuju = f && f.setuju; if (setuju && (setuju.getBoundingClientRect().top < innerHeight * 0.5 )) return 'dadKirim';
+      let k = 'dadA';
+      f && f.querySelectorAll('h3.sub').forEach(h => { if (h.getBoundingClientRect().top < garis) k = 'dad' + h.textContent.trim().charAt(0); });
+      return TIPS_MI[k] ? k : 'dadA';
+    }
+    return 'masuk';
+  }
+  function bolehMaskotIkut() {
+    if (MI.tutup || !$('layarAwal').classList.contains('tampil')) return false;
+    if (EDIT_DAD && EDIT_DAD.admin) return false;
+    const a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && innerWidth < 700) return false;   // keyboard HP terbuka: jangan menutupi isian
+    if ($('layarAwal').classList.contains('mode-beranda')) return !terlihatDiLayar($('maskotPanggung'));
+    return true;
+  }
+  function bicaraMaskotIkut(teks, lama) {
+    const g = $('miGelembung'); g.textContent = teks; g.classList.add('buka');
+    clearTimeout(MI.timer); MI.timer = setTimeout(() => g.classList.remove('buka'), lama || 4500);
+  }
+  function perbaruiMaskotIkut() {
+    const el = $('maskotIkut'); if (!el) return;
+    const tampil = bolehMaskotIkut();
+    el.classList.toggle('tampil', tampil);
+    if (!tampil) { $('miGelembung').classList.remove('buka'); return; }
+    const k = konteksMaskotIkut();
+    if (k !== MI.konteks) { MI.konteks = k; MI.tipe = 0; bicaraMaskotIkut(TIPS_MI[k][0]); }
+  }
+  function sapaMaskotIkut() {
+    const t = TIPS_MI[MI.konteks] || TIPS_MI.beranda;
+    MI.tipe = (MI.tipe + 1) % t.length; bicaraMaskotIkut(t[MI.tipe]);
+    $('miBadan').querySelectorAll('img').forEach(im => { im.classList.remove('lompat'); void im.offsetWidth; im.classList.add('lompat');
+      im.addEventListener('animationend', () => im.classList.remove('lompat'), { once: true }); });
+  }
+  function tutupMaskotIkut() {
+    MI.tutup = true; try { sessionStorage.setItem('maskotIkutTutup', '1'); } catch (e) {}
+    perbaruiMaskotIkut(); toast('Maskot disembunyikan. Muncul lagi saat SIMAK dibuka ulang.');
+  }
+  (function pasangMaskotIkut() {
+    const asal = document.querySelectorAll('#maskotPanggung img'), tuju = document.querySelectorAll('#miBadan img');
+    if (asal.length === 2 && tuju.length === 2) { tuju[0].src = asal[0].src; tuju[1].src = asal[1].src; }
+    let jadwal = false;
+    const nanti = () => { if (jadwal) return; jadwal = true; requestAnimationFrame(() => { jadwal = false; perbaruiMaskotIkut(); }); };
+    addEventListener('scroll', () => {
+      const y = scrollY, el = $('maskotIkut');
+      if (Math.abs(y - MI.gulirY) > 3) { el.classList.toggle('turun', y > MI.gulirY); el.classList.toggle('naik', y < MI.gulirY); }
+      MI.gulirY = y; clearTimeout(MI.gulirT); MI.gulirT = setTimeout(() => el.classList.remove('turun', 'naik'), 180);
+      nanti();
+    }, { passive: true });
+    addEventListener('resize', nanti);
+    document.addEventListener('focusin', () => setTimeout(nanti, 50));
+    document.addEventListener('focusout', () => setTimeout(nanti, 120));
+    document.addEventListener('click', () => setTimeout(nanti, 80));
+    setTimeout(nanti, 3200);
+  })();
   function tampilBeranda() {
     $('layarAwal').classList.add('mode-beranda');
     document.querySelectorAll('.awal-menu button').forEach(b => b.classList.remove('aktif'));
