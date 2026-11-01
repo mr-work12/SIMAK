@@ -109,7 +109,7 @@ const SHEET = {
     'Jenis Kelamin', 'Tempat Lahir', 'Tanggal Lahir', 'Alamat Asal', 'Sosial Media', 'Motto', 'Perguruan Tinggi',
     'Riwayat Pendidikan', 'Riwayat Organisasi', 'Buku Dibaca', 'Karya', 'Target', 'Foto', 'Formulir PDF', 'Tahun Daftar', 'Data Formulir (sistem)'] },
   SERTIFIKAT: { nama: 'Sertifikat', header: ['ID Kegiatan', 'Nama Kegiatan', 'ID Kader', 'Nama Kader', 'Nomor', 'File ID', 'Link', 'Dibuat', 'Peran'] },
-  TAMU:     { nama: 'Peserta Umum', header: ['ID', 'ID Kegiatan', 'Nama', 'NPM / No. Identitas', 'Asal (Prodi/Fakultas/Instansi)', 'Email', 'No. HP', 'Status', 'Waktu', 'Jarak (m)', 'Koordinat', 'Hari Hadir'] },
+  TAMU:     { nama: 'Peserta Umum', header: ['ID', 'ID Kegiatan', 'Nama', 'NPM / No. Identitas', 'Asal (Prodi/Fakultas/Instansi)', 'Email', 'No. HP', 'Status', 'Waktu', 'Jarak (m)', 'Koordinat', 'Hari Hadir', 'Peran'] },
   PANITIA:  { nama: 'Panitia Kegiatan', header: ['ID', 'ID Kegiatan', 'ID Kader', 'Nama', 'Peran', 'Aktif', 'Dibuat'] },
   PERKADERAN: { nama: 'Perkaderan', header: ['ID', 'ID Kader', 'Nama Kader', 'Jenjang', 'Tahun', 'Penyelenggara', 'Status', 'Diperbarui', 'Diinput Oleh'] },
   SURAT:    { nama: 'Agenda Surat', header: ['ID', 'Jenis', 'Nomor Surat', 'Tanggal Surat', 'Perihal', 'Dari / Kepada', 'Keterangan', 'Berkas', 'Dicatat', 'ID Email'] },
@@ -818,6 +818,8 @@ function hitungHadir_(idKeg, absen, tamu) {
   });
   return { kader: kader, tamu: tm };
 }
+/** Syarat minimal hari hadir untuk sertifikat peserta umum: tamu undangan cukup hadir sekali (biasanya pembukaan). */
+function syaratTamu_(t, minH) { return String(t[12] || '') === 'Tamu Undangan' ? 1 : minH; }
 /** Admin mengatur lama kegiatan & syarat minimal hadir untuk sertifikat. */
 function aturHariKegiatan(pw, id, jumlahHari, minHadir) {
   cek_(pw);
@@ -1031,7 +1033,7 @@ function getData(pw) {
     return {
       jumlahHari: nHari, minHadir: minH, tanggalSelesai: tambahTgl_(fmt_(r[2]), nHari - 1), hariKe: hariKe_(r), rekapHari: rekapHari,
       jumlahOrang: Object.keys(orang).length,
-      layakSertifikat: Object.keys(hdr.kader).filter(k => hdr.kader[k] >= minH).length + Object.keys(hdr.tamu).filter(k => hdr.tamu[k] >= minH).length,
+      layakSertifikat: Object.keys(hdr.kader).filter(k => hdr.kader[k] >= minH).length + tamuRows.filter(t => t[1] === r[0] && t[7] === 'Hadir' && (hdr.tamu[t[0]] || 0) >= syaratTamu_(t, minH)).length,
       id: r[0], nama: r[1], tanggal: fmt_(r[2]), waktu: fmt_(r[3], 'HH:mm'),
       tempat: r[4], ket: r[5], status: statusKeg_(r), rekap: rekap, jumlahAbsen: a.length,
       idLokasi: r[8] || '', namaLokasi: lok ? lok.nama : '(lokasi belum diatur)',
@@ -2162,7 +2164,7 @@ function buatSertifikatKegiatan_(keg, mulai) {
     }
   });
   rows_('TAMU').forEach(r => {          // peserta umum / non-FAI lewat link khusus
-    if (r[1] === idKeg && r[7] === 'Hadir' && (hdr.tamu[r[0]] || 0) >= minH && !sudah[r[0] + '|Peserta']) antre.push({ id: r[0], nama: r[2], peran: 'Peserta',
+    if (r[1] === idKeg && r[7] === 'Hadir' && (hdr.tamu[r[0]] || 0) >= syaratTamu_(r, minH) && !sudah[r[0] + '|Peserta']) antre.push({ id: r[0], nama: r[2], peran: 'Peserta',
       identitas: [r[3] ? 'NPM: ' + r[3] : '', r[4]].filter(Boolean).join(' · '), email: String(r[5] || '').trim() });
   });
   rows_('PANITIA').forEach(r => {
@@ -2258,7 +2260,7 @@ function daftarTamu_() {
   const sertif = {};
   rows_('SERTIFIKAT').forEach(r => { sertif[r[0] + '|' + r[2]] = r[6]; });
   return rows_('TAMU').map(r => ({ id: r[0], idKeg: r[1], nama: r[2], npm: String(r[3] || ''), asal: r[4], email: r[5],
-    hp: String(r[6] || ''), status: r[7], waktu: fmt_(r[8], 'dd/MM HH:mm'), jarak: r[9], sertifikat: sertif[r[1] + '|' + r[0]] || '' }));
+    hp: String(r[6] || ''), status: r[7], waktu: fmt_(r[8], 'dd/MM HH:mm'), jarak: r[9], peran: String(r[12] || ''), sertifikat: sertif[r[1] + '|' + r[0]] || '' }));
 }
 function infoTamu(idKeg) {
   const keg = rows_('KEGIATAN').find(r => r[0] === idKeg);
@@ -2317,6 +2319,7 @@ function tambahTamuManual(pw, idKeg, d) {
   if (!nama) throw new Error('Nama wajib diisi.');
   if (!asal) throw new Error('Asal (prodi/fakultas/instansi) wajib diisi.');
   if (email) cekEmail_(email);
+  const peran = d.sebagai === 'tamu' ? 'Tamu Undangan' : 'Peserta Luar FAI';
   kunci_(() => {
     const keg = rows_('KEGIATAN').find(r => r[0] === idKeg);
     if (!keg) throw new Error('Kegiatan tidak ditemukan.');
@@ -2334,9 +2337,9 @@ function tambahTamuManual(pw, idKeg, d) {
     if (i > 0) {
       // data lama (waktu, jarak, koordinat) tetap; NPM & HP lama dipertahankan bila kolom ini dikosongkan
       const npmSimpan = npm ? npmTeks : v[i][3], hpSimpan = hp ? hpTeks : v[i][6];
-      sh.getRange(i + 1, 3, 1, 10).setValues([amanBaris_([nama, npmSimpan, asal, email, hpSimpan, 'Hadir', v[i][8], v[i][9], v[i][10], hariTeks])]);
+      sh.getRange(i + 1, 3, 1, 11).setValues([amanBaris_([nama, npmSimpan, asal, email, hpSimpan, 'Hadir', v[i][8], v[i][9], v[i][10], hariTeks, peran])]);
     } else {
-      sh.appendRow(amanBaris_([idBaru_('TAMU', 'U'), idKeg, nama, npmTeks, asal, email, hpTeks, 'Hadir', new Date(), '', 'Dicatat manual admin', hariTeks]));
+      sh.appendRow(amanBaris_([idBaru_('TAMU', 'U'), idKeg, nama, npmTeks, asal, email, hpTeks, 'Hadir', new Date(), '', 'Dicatat manual admin', hariTeks, peran]));
     }
   });
   return getData(pw);
@@ -2348,7 +2351,8 @@ function sertifikatTamu(idKeg, email) {
   if (!t) throw new Error('Email ini belum tercatat hadir di kegiatan ini.');
   const keg = rows_('KEGIATAN').find(r => r[0] === idKeg);
   const hadir = Math.max(1, String(t[11] || '').split(',').filter(x => x.trim()).length);
-  const info = keg ? { jumlahHadir: hadir, jumlahHari: jumlahHari_(keg), minHadir: minHadir_(keg), kurang: hadir < minHadir_(keg) } : {};
+  const syarat = keg ? syaratTamu_(t, minHadir_(keg)) : 1;
+  const info = keg ? { jumlahHadir: hadir, jumlahHari: jumlahHari_(keg), minHadir: syarat, kurang: hadir < syarat } : {};
   if (!keg || keg[14] !== 'Ya') return Object.assign({ nama: t[2], status: t[7], link: '', belumDibuka: true }, info);
   const s = rows_('SERTIFIKAT').find(r => r[0] === idKeg && r[2] === t[0]);
   return Object.assign({ nama: t[2], status: t[7], link: s ? s[6] : '' }, info);

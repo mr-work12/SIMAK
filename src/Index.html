@@ -658,7 +658,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 07.10</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 07.20</p>
     </div>
   </section>
   <div class="tengah">
@@ -668,7 +668,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 07.10</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 07.20</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -3897,12 +3897,13 @@
     const n = Math.max(1, k.jumlahHari || 1);
     const hariBox = Array.from({ length: n }, (_, i) => i + 1).map(h =>
       `<label style="display:inline-flex;align-items:center;gap:6px;width:auto;white-space:nowrap;margin:0 14px 8px 0;font-weight:normal"><input type="checkbox" name="hari" value="${h}" style="width:auto;margin:0"${h === 1 ? ' checked' : ''}> Hari ${h}${h === 1 && n > 1 ? ' (pembukaan)' : ''}</label>`).join('');
-    const pilihSebagai = n > 1 ? `
+    const pilihSebagai = `
           <label>Hadir sebagai</label>
           <select name="sebagai" onchange="aturHariTamuManual(this)">
-            <option value="tamu">Tamu undangan (pembukaan saja)</option>
-            <option value="peserta">Peserta luar FAI (semua hari)</option>
-          </select>` : '';
+            <option value="tamu">Tamu undangan${n > 1 ? ' (pembukaan saja)' : ''}</option>
+            <option value="peserta">Peserta luar FAI${n > 1 ? ' (semua hari)' : ''}</option>
+          </select>
+          ${k.sertifikat ? '<p style="font-size:12px;color:#666;margin:4px 0 0">Tamu undangan tetap dapat sertifikat walau hanya hadir di pembukaan.</p>' : ''}`;
     return `
       <details style="margin-top:12px">
         <summary style="cursor:pointer;font-weight:600">➕ Tambah peserta umum manual (tamu undangan / luar FAI)</summary>
@@ -3926,7 +3927,7 @@
   async function tambahTamuManual(e) {
     e.preventDefault();
     const f = e.target, btn = f.querySelector('button[type=submit]'), d = { hari: [] };
-    ['nama', 'npm', 'asal', 'email', 'hp'].forEach(x => { d[x] = f[x].value; });
+    ['nama', 'npm', 'asal', 'email', 'hp', 'sebagai'].forEach(x => { d[x] = f[x] ? f[x].value : ''; });
     f.querySelectorAll('input[name=hari]:checked').forEach(c => d.hari.push(Number(c.value)));
     sibuk(btn, '…');
     try { DATA = await panggil('tambahTamuManual', PW, f.idKeg.value, d); render(); toast('Peserta umum dicatat Hadir.'); }
@@ -3992,7 +3993,7 @@
           <p class="info" style="font-size:12px">Cetak / tampilkan di layar saat acara. Peserta umum memindai QR, lalu absen Hadir di lokasi.</p>
         </div>
         ${tm.length ? '<div class="wrap" style="margin-top:8px"><table><tr><th>Peserta umum (' + tm.length + ')</th><th>Asal</th><th>Sertifikat</th></tr>' + tm.map(x =>
-          `<tr><td>${esc(x.nama)}<br><small style="color:#888">${esc(x.email)} · ${esc(x.waktu)}</small></td><td><small>${esc(x.asal)}</small></td>
+          `<tr><td>${esc(x.nama)}${x.peran === 'Tamu Undangan' ? ' <small style="background:#fdf1d6;color:#8a5a00;border-radius:4px;padding:1px 5px">Tamu undangan</small>' : ''}<br><small style="color:#888">${[x.email, x.waktu].filter(Boolean).map(esc).join(' · ')}</small></td><td><small>${esc(x.asal)}</small></td>
           <td>${x.sertifikat ? `<a href="${esc(x.sertifikat)}" target="_blank" rel="noopener">📄</a>` : '<small style="color:#999">belum</small>'}</td></tr>`).join('') + '</table></div>'
           : '<p class="kosong" style="margin:6px 0 0">Belum ada peserta umum yang absen.</p>'}`; })()}
       ${formTamuManual(k)}
