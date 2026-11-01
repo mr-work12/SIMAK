@@ -658,7 +658,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 07.00</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 07.10</p>
     </div>
   </section>
   <div class="tengah">
@@ -668,7 +668,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 07.00</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 07.10</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -3892,9 +3892,17 @@
     } catch (e) { toast(e.message, true); }
   }
   // Admin mencatat peserta umum secara manual (tamu undangan / luar FAI) tanpa GPS
+  // Tamu undangan biasanya hanya hadir di hari pertama (pembukaan); peserta luar FAI ikut semua hari.
   function formTamuManual(k) {
-    const hariBox = Array.from({ length: Math.max(1, k.jumlahHari || 1) }, (_, i) => i + 1).map(h =>
-      `<label style="display:inline-flex;align-items:center;gap:4px;margin:0 12px 6px 0"><input type="checkbox" name="hari" value="${h}" checked> Hari ${h}</label>`).join('');
+    const n = Math.max(1, k.jumlahHari || 1);
+    const hariBox = Array.from({ length: n }, (_, i) => i + 1).map(h =>
+      `<label style="display:inline-flex;align-items:center;gap:6px;width:auto;white-space:nowrap;margin:0 14px 8px 0;font-weight:normal"><input type="checkbox" name="hari" value="${h}" style="width:auto;margin:0"${h === 1 ? ' checked' : ''}> Hari ${h}${h === 1 && n > 1 ? ' (pembukaan)' : ''}</label>`).join('');
+    const pilihSebagai = n > 1 ? `
+          <label>Hadir sebagai</label>
+          <select name="sebagai" onchange="aturHariTamuManual(this)">
+            <option value="tamu">Tamu undangan (pembukaan saja)</option>
+            <option value="peserta">Peserta luar FAI (semua hari)</option>
+          </select>` : '';
     return `
       <details style="margin-top:12px">
         <summary style="cursor:pointer;font-weight:600">➕ Tambah peserta umum manual (tamu undangan / luar FAI)</summary>
@@ -3904,12 +3912,16 @@
           <label>NPM / No. identitas <small>(opsional)</small></label><input name="npm">
           <label>Asal (prodi/fakultas/instansi) *</label><input name="asal" required>
           <label>Email <small>(opsional, untuk sertifikat)</small></label><input name="email" type="email">
-          <label>No. HP <small>(opsional)</small></label><input name="hp" inputmode="tel">
+          <label>No. HP <small>(opsional)</small></label><input name="hp" inputmode="tel">${pilihSebagai}
           <label>Hari hadir *</label>
           <div>${hariBox}</div>
           <div class="baris-aksi"><button class="btn penuh hijau" type="submit">Simpan sebagai Hadir</button></div>
         </form>
       </details>`;
+  }
+  function aturHariTamuManual(sel) {
+    const semua = sel.value === 'peserta';
+    sel.form.querySelectorAll('input[name=hari]').forEach(c => { c.checked = semua || c.value === '1'; });
   }
   async function tambahTamuManual(e) {
     e.preventDefault();
