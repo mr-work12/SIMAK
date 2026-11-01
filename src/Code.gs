@@ -486,8 +486,8 @@ function catatSuratEmail_(jenis, m, lamp) {
   }
   const ket = '📧 Dari email' + (lamp.length > 1 ? ' · ' + lamp.length + ' lampiran' : '') +
     (nomor === '(belum ada nomor)' ? ' · lengkapi nomor surat' : '');
-  kunci_(() => sh_('SURAT').appendRow([idBaru_('SURAT', 'S'), jenis, "'" + nomor, "'" + tgl, subjek.slice(0, 200),
-    pihak.slice(0, 150), ket, url, new Date(), m.getId()]));
+  kunci_(() => sh_('SURAT').appendRow(amanBaris_([idBaru_('SURAT', 'S'), jenis, "'" + nomor, "'" + tgl, subjek.slice(0, 200),
+    pihak.slice(0, 150), ket, url, new Date(), m.getId()])));
 }
 
 function simpanNotulen(pw, n) {
@@ -769,7 +769,7 @@ function hapusBaris_(key, id) {
 function tulisUlangAbsensi_(data) {
   const sh = sh_('ABSENSI');
   const n = SHEET.ABSENSI.header.length;
-  data = data.map(r => { r = r.slice(0, n); while (r.length < n) r.push(''); return r; });
+  data = data.map(r => { r = r.slice(0, n); while (r.length < n) r.push(''); return amanBaris_(r); });
   if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, n).clearContent();
   if (data.length) sh.getRange(2, 1, data.length, n).setValues(data);
 }
@@ -857,6 +857,10 @@ function cekEmail_(email) {
 // ----- Pemilah NPM / NIA -----
 /** Ubah huruf/angka "gaya" dari keyboard font (mis. 𝟤𝟥𝟩 atau 𝖭𝗉𝗆) jadi huruf biasa + buang karakter tak terlihat. */
 function rapiTeks_(s) { s = String(s == null ? '' : s); try { s = s.normalize('NFKC'); } catch (e) {} return s.replace(/[\u200B-\u200D\u2060\uFEFF]/g, ''); }
+/** Teks yang diawali = + - @ akan dibaca Google Sheets sebagai rumus. Tambahkan ' di depan supaya tetap teks biasa
+ *  (tanda ' tidak ikut tersimpan / terbaca). Selain teks (angka, tanggal) dibiarkan apa adanya. */
+function amanSel_(v) { return typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }
+function amanBaris_(r) { return r.map(amanSel_); }
 function normalNomor_(s) { return rapiTeks_(s).toUpperCase().replace(/[\s.\-\/_]/g, ''); }
 /** 'NPM' | 'NIA' | '' — ditebak dari bentuk nomornya. */
 function jenisNomor_(s) {
@@ -1172,7 +1176,7 @@ function editPeserta(pw, id, p) {
       const a = sa.getRange(2, 4, la - 1, 2).getValues();
       let ubah = false;
       a.forEach(r => { if (r[0] === id) { r[1] = p.nama.trim(); ubah = true; } });
-      if (ubah) sa.getRange(2, 4, la - 1, 2).setValues(a);
+      if (ubah) sa.getRange(2, 4, la - 1, 2).setValues(a.map(amanBaris_));
     }
   });
   return getData(pw);
@@ -1213,16 +1217,22 @@ function ubahKegiatan(pw, id, k) {
   if (!k.idLokasi || !lok) throw new Error('Pilih lokasi kegiatan.');
   const n = Math.max(1, Math.min(30, parseInt(k.jumlahHari, 10) || 1));
   const m = Math.max(1, Math.min(n, parseInt(k.minHadir, 10) || 1));
+  const tempat = rapiTeks_(k.tempat || '').trim(), ket = rapiTeks_(k.ket || '').trim();
   let lama;
   kunci_(() => {
     lama = rows_('KEGIATAN').find(r => r[0] === id);
     if (!lama) throw new Error('Kegiatan tidak ditemukan.');
+    // hari terakhir yang sudah ada absennya: kader (Absensi) maupun peserta umum (Peserta Umum)
     const absen = rows_('ABSENSI').filter(r => r[0] === id && r[7] !== 'Otomatis');
-    const hariMaks = absen.reduce((a, r) => Math.max(a, hariBaris_(r)), 0);
+    let hariMaks = absen.reduce((a, r) => Math.max(a, hariBaris_(r)), 0);
+    rows_('TAMU').forEach(r => {
+      if (r[1] !== id) return;
+      String(r[11] || '').split(',').forEach(h => { hariMaks = Math.max(hariMaks, parseInt(h, 10) || 0); });
+    });
     if (hariMaks > n) throw new Error('Sudah ada absensi pada hari ke-' + hariMaks + '. Lama kegiatan tidak bisa dikurangi di bawah ' + hariMaks + ' hari.');
     const sh = sh_('KEGIATAN'), b = barisKeg_(id);
     if (sh.getMaxColumns() < 20) sh.insertColumnsAfter(sh.getMaxColumns(), 20 - sh.getMaxColumns());
-    sh.getRange(b, 2, 1, 5).setValues([[nama, "'" + tanggal, "'" + waktu, String(k.tempat || '').trim(), String(k.ket || '').trim()]]);
+    sh.getRange(b, 2, 1, 5).setValues([amanBaris_([nama, "'" + tanggal, "'" + waktu, tempat, ket])]);
     sh.getRange(b, 9).setValue(k.idLokasi);
     sh.getRange(b, 11).setValue(k.sertifikat ? 'Ya' : '');
     sh.getRange(b, 19, 1, 2).setValues([[n, m]]);
@@ -1236,17 +1246,18 @@ function ubahKegiatan(pw, id, k) {
         ubah = true;
         return [nama, "'" + (n > 1 ? tambahTgl_(tanggal, hariBaris_(r) - 1) : tanggal)];
       });
-      if (ubah) sa.getRange(2, 2, la - 1, 2).setValues(nilai);
+      if (ubah) sa.getRange(2, 2, la - 1, 2).setValues(nilai.map(amanBaris_));
     }
   });
   const info = ['Perubahan kegiatan disimpan.'];
   const berubahJadwal = fmt_(lama[2]) !== tanggal || fmt_(lama[3], 'HH:mm') !== waktu || lama[1] !== nama;
-  if (lama[9] && berubahJadwal) {
+  const berubahLokasi = String(lama[8] || '') !== String(k.idLokasi) || String(lama[4] || '').trim() !== tempat;
+  if (lama[9] && (berubahJadwal || berubahLokasi)) {
     try {
       const ev = CalendarApp.getDefaultCalendar().getEventById(lama[9]);
       if (ev) {
         ev.setTitle(nama + ' | ' + CONFIG.PENYELENGGARA);
-        ev.setLocation([lok.nama, String(k.tempat || '').trim()].filter(Boolean).join(' · '));
+        ev.setLocation([lok.nama, tempat].filter(Boolean).join(' · '));
         if (waktu) {
           const mulai = Utilities.parseDate(tanggal + ' ' + waktu, CONFIG.ZONA_WAKTU, 'yyyy-MM-dd HH:mm');
           ev.setTime(mulai, new Date(mulai.getTime() + CONFIG.DURASI_KEGIATAN_JAM * 3600000));
@@ -1255,7 +1266,7 @@ function ubahKegiatan(pw, id, k) {
       }
     } catch (e) { info.push('Google Calendar gagal diperbarui: ' + e.message); }
   }
-  if (berubahJadwal && String(lama[17] || '') === 'Sudah dibagikan') info.push('Kegiatan ini sudah pernah dibagikan — kabari kader tentang perubahan jadwal (email/WA lama tidak dikirim ulang).');
+  if ((berubahJadwal || berubahLokasi) && String(lama[17] || '') === 'Sudah dibagikan') info.push('Kegiatan ini sudah pernah dibagikan — kabari kader tentang perubahan jadwal (email/WA lama tidak dikirim ulang).');
   const data = getData(pw);
   data.infoKalender = info.join(' ');
   return data;
@@ -2288,8 +2299,8 @@ function absenTamu(idKeg, d, posisi) {
     const baris = [nama, d.npm ? "'" + String(d.npm).trim() : '', String(d.asal).trim(), email, d.hp ? "'" + String(d.hp).trim() : '',
       'Hadir', new Date(), jarak, koordinat, "'" + lama.join(',')];
     jmlTamu = lama.length;
-    if (i > 0) sh.getRange(i + 1, 3, 1, baris.length).setValues([baris]);
-    else sh.appendRow([idBaru_('TAMU', 'U'), idKeg].concat(baris));
+    if (i > 0) sh.getRange(i + 1, 3, 1, baris.length).setValues([amanBaris_(baris)]);
+    else sh.appendRow(amanBaris_([idBaru_('TAMU', 'U'), idKeg].concat(baris)));
   });
   return { ok: true, jarak: jarak, nama: nama, hari: hariTamu, jumlahHadir: jmlTamu };
 }
@@ -2314,16 +2325,18 @@ function tambahTamuManual(pw, idKeg, d) {
     const hari = pilih.map(x => parseInt(x, 10)).filter(x => x >= 1 && x <= nHari);
     if (!hari.length) throw new Error('Pilih minimal satu hari hadir.');
     const sh = sh_('TAMU'), v = sh.getDataRange().getValues();
-    const i = email ? v.findIndex((r, n) => n > 0 && r[1] === idKeg && String(r[5]).trim().toLowerCase() === email) : -1;
+    // orang yang sama = email sama; bila tanpa email: nama sama (tanpa email) di kegiatan ini → hari hadirnya digabung
+    const i = email ? v.findIndex((r, n) => n > 0 && r[1] === idKeg && String(r[5]).trim().toLowerCase() === email)
+      : v.findIndex((r, n) => n > 0 && r[1] === idKeg && !String(r[5] || '').trim() && rapiTeks_(r[2]).trim().toLowerCase() === nama.toLowerCase());
     const lama = i > 0 ? String(v[i][11] || '').split(',').map(x => x.trim()).filter(Boolean) : [];
     const gabung = Array.from(new Set(lama.concat(hari.map(String)))).sort((a, b) => a - b);
     const npmTeks = npm ? "'" + npm : '', hpTeks = hp ? "'" + hp : '', hariTeks = "'" + gabung.join(',');
     if (i > 0) {
       // data lama (waktu, jarak, koordinat) tetap; NPM & HP lama dipertahankan bila kolom ini dikosongkan
       const npmSimpan = npm ? npmTeks : v[i][3], hpSimpan = hp ? hpTeks : v[i][6];
-      sh.getRange(i + 1, 3, 1, 10).setValues([[nama, npmSimpan, asal, email, hpSimpan, 'Hadir', v[i][8], v[i][9], v[i][10], hariTeks]]);
+      sh.getRange(i + 1, 3, 1, 10).setValues([amanBaris_([nama, npmSimpan, asal, email, hpSimpan, 'Hadir', v[i][8], v[i][9], v[i][10], hariTeks])]);
     } else {
-      sh.appendRow([idBaru_('TAMU', 'U'), idKeg, nama, npmTeks, asal, email, hpTeks, 'Hadir', new Date(), '', 'Dicatat manual admin', hariTeks]);
+      sh.appendRow(amanBaris_([idBaru_('TAMU', 'U'), idKeg, nama, npmTeks, asal, email, hpTeks, 'Hadir', new Date(), '', 'Dicatat manual admin', hariTeks]));
     }
   });
   return getData(pw);
@@ -2715,9 +2728,9 @@ function ubahProfilKader(email, token, x) {
   const tglL = x.tanggalLahir !== undefined ? cekTglLahir_(x.tanggalLahir) : null;
   kunci_(() => {
     const b = barisKader_(p[0]);
-    sh_('PESERTA').getRange(b, 2).setValue(nama);
+    sh_('PESERTA').getRange(b, 2).setValue(amanSel_(nama));
     sh_('PESERTA').getRange(b, 5).setValue("'" + hp);
-    if (x.tempatLahir !== undefined) pastikanKolomPeserta_().getRange(b, 13).setValue(String(x.tempatLahir || '').trim());
+    if (x.tempatLahir !== undefined) pastikanKolomPeserta_().getRange(b, 13).setValue(amanSel_(String(x.tempatLahir || '').trim()));
     if (tglL !== null) pastikanKolomPeserta_().getRange(b, 14).setValue(tglL ? "'" + tglL : '');
     if (nama !== p[1]) {                                   // nama di riwayat absensi ikut diperbarui
       const sa = sh_('ABSENSI'), la = sa.getLastRow();
@@ -2725,7 +2738,7 @@ function ubahProfilKader(email, token, x) {
         const a = sa.getRange(2, 4, la - 1, 2).getValues();
         let ubah = false;
         a.forEach(r => { if (r[0] === p[0]) { r[1] = nama; ubah = true; } });
-        if (ubah) sa.getRange(2, 4, la - 1, 2).setValues(a);
+        if (ubah) sa.getRange(2, 4, la - 1, 2).setValues(a.map(amanBaris_));
       }
     }
   });
@@ -2851,9 +2864,9 @@ function daftarPeserta(p) {
     const no = pisahNomor_(p.nim, '');
     cekNomorUnik_(no.npm, no.nia, null);
     const id = idBaru_('PESERTA', 'P');
-    sh_('PESERTA').appendRow([id, p.nama.trim(), no.npm ? "'" + no.npm : '', p.email.trim(),
+    sh_('PESERTA').appendRow(amanBaris_([id, p.nama.trim(), no.npm ? "'" + no.npm : '', p.email.trim(),
       "'" + (p.hp || ''), new Date(), tahunDad_(p.tahunDad), '', hashPin_(id, p.pin), '[]', no.nia ? "'" + no.nia : '', '',
-      String(p.tempatLahir).trim(), "'" + tglL, p.syahadah === 'Sudah' ? 'Sudah' : 'Belum', '', '', '']);
+      String(p.tempatLahir).trim(), "'" + tglL, p.syahadah === 'Sudah' ? 'Sudah' : 'Belum', '', '', '']));
   });
   sambutKaderBaru_(p);
   const k = kaderByEmail_(p.email);
@@ -2898,8 +2911,8 @@ function absenPeserta(email, nim, idKeg, status, posisi) {
         : 'Kegiatan ini sudah berakhir (' + tglIndo_(mulaiK) + ' – ' + tglIndo_(selesaiK) + ').');
     }
     const sh = sh_('ABSENSI');
-    const row = [keg[0], keg[1], nHari > 1 ? tambahTgl_(fmt_(keg[2]), hari - 1) : fmt_(keg[2]), p[0], p[1], status, new Date(), 'Peserta', jarak, koordinat,
-      nHari > 1 ? hari : ''];
+    const row = amanBaris_([keg[0], keg[1], nHari > 1 ? tambahTgl_(fmt_(keg[2]), hari - 1) : fmt_(keg[2]), p[0], p[1], status, new Date(), 'Peserta', jarak, koordinat,
+      nHari > 1 ? hari : '']);
     const last = sh.getLastRow();
     if (last >= 2) {
       const v = sh.getRange(2, 1, last - 1, 11).getValues();
@@ -2955,8 +2968,8 @@ function simpanPerkaderan_(kader, it, status, oleh) {
   const thn = cekItemPerkaderan_(it, kader[0]);
   kunci_(() => {
     const id = idBaru_('PERKADERAN', 'R');
-    sh_('PERKADERAN').appendRow([id, kader[0], kader[1], it.jenjang, thn, String(it.penyelenggara || '').trim(),
-      status, new Date(), oleh]);
+    sh_('PERKADERAN').appendRow(amanBaris_([id, kader[0], kader[1], it.jenjang, thn, String(it.penyelenggara || '').trim(),
+      status, new Date(), oleh]));
   });
 }
 
@@ -3078,11 +3091,11 @@ function daftarDAD(p) {
   kunci_(() => {
     if (rows_('DAD').some(r => String(r[5]).trim().toLowerCase() === email)) throw new Error('Email ini sudah terdaftar.');
     const id = idBaru_('DAD', 'D');
-    sh_('DAD').appendRow([id, p.nama.trim(), "'" + String(p.npm || '').trim(), p.prodi || '', "'" + (p.semester || ''),
+    sh_('DAD').appendRow(amanBaris_([id, p.nama.trim(), "'" + String(p.npm || '').trim(), p.prodi || '', "'" + (p.semester || ''),
       p.email.trim(), "'" + p.hp, p.alamat || '', p.motivasi || '', kini, 'Terdaftar', kini, '',
       p.jk || '', p.tempatLahir || '', p.tglLahir ? "'" + p.tglLahir : '', p.alamatAsal || '', p.sosmed || '', p.motto || '',
       p.pt || '', k.pendidikan, k.organisasi, k.buku, k.karya, p.target || '',
-      fotoFile.getUrl(), pdfFile.getUrl(), Number(tahun), k.json]);
+      fotoFile.getUrl(), pdfFile.getUrl(), Number(tahun), k.json]));
   });
   try { kirimKonfirmasiDAD_(p, pdf); } catch (e) {}
   try { grupSetelahDaftarDAD_(); } catch (e) {}
@@ -3243,12 +3256,12 @@ function simpanUbahDAD_(ditemukan, p, kirimEmail) {
   kunci_(() => {
     const sh = sh_('DAD');
     const b = ditemukan.baris;
-    sh.getRange(b, 2, 1, 8).setValues([[p.nama.trim(), "'" + String(p.npm || '').trim(), p.prodi || '', "'" + (p.semester || ''),
-      p.email, "'" + p.hp, p.alamat || '', p.motivasi || '']]);
+    sh.getRange(b, 2, 1, 8).setValues([amanBaris_([p.nama.trim(), "'" + String(p.npm || '').trim(), p.prodi || '', "'" + (p.semester || ''),
+      p.email, "'" + p.hp, p.alamat || '', p.motivasi || ''])]);
     sh.getRange(b, 12).setValue(new Date());
-    sh.getRange(b, 14, 1, 16).setValues([[p.jk || '', p.tempatLahir || '', p.tglLahir ? "'" + p.tglLahir : '', p.alamatAsal || '',
+    sh.getRange(b, 14, 1, 16).setValues([amanBaris_([p.jk || '', p.tempatLahir || '', p.tglLahir ? "'" + p.tglLahir : '', p.alamatAsal || '',
       p.sosmed || '', p.motto || '', p.pt || '', k.pendidikan, k.organisasi, k.buku, k.karya, p.target || '',
-      fotoUrl, pdfFile.getUrl(), lama[27], k.json]]);
+      fotoUrl, pdfFile.getUrl(), lama[27], k.json])]);
   });
   if (kirimEmail) try {
     if (MailApp.getRemainingDailyQuota() > 0) MailApp.sendEmail(p.email, 'Formulir DAD Diperbarui | ' + CONFIG.PENYELENGGARA,
@@ -3401,7 +3414,7 @@ function grupWA_(id) {
   return /^\d[\d-]{5,40}@g\.us$/.test(t) ? t : '';
 }
 function catatWA_(jenis, tujuan, jumlah, status, ket) {
-  try { sh_('LOGWA').appendRow([new Date(), jenis, "'" + tujuan, jumlah, status, String(ket || '').slice(0, 300)]); } catch (e) {}
+  try { sh_('LOGWA').appendRow(amanBaris_([new Date(), jenis, "'" + tujuan, jumlah, status, String(ket || '').slice(0, 300)])); } catch (e) {}
 }
 /** Kirim ke Fonnte. paksa = abaikan sakelar aktif/jenis (untuk tombol tes). Tidak pernah melempar galat. */
 function kirimWA_(nomor, pesan, jenis, paksa) {
