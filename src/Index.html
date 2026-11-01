@@ -654,7 +654,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 11.25</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 14.00</p>
     </div>
   </section>
   <div class="tengah">
@@ -664,7 +664,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 11.25</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 14.00</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1346,12 +1346,18 @@
     <!-- GALERI -->
     <section id="tab-galeri" hidden>
       <div class="kartu">
-        <h2>Upload Foto &amp; Video Kegiatan</h2>
+        <h2>Upload Foto &amp; Video Dokumentasi</h2>
         <form id="formGaleri" onsubmit="uploadGaleri(event)">
-          <label>Kegiatan</label>
-          <select name="idKeg" id="pilihKegGaleri"></select>
-          <label>Judul / keterangan</label>
-          <input name="judul" placeholder="mis. Pembukaan DAD 2026">
+          <label>Dokumentasi untuk</label>
+          <select name="idKeg" id="pilihKegGaleri" onchange="aturFormGaleri()"></select>
+          <div id="isianLuarKeg">
+            <div class="grid2">
+              <div><label>Nama acara / momen *</label><input name="acara" placeholder="mis. Silaturahmi ke PC IMM, Rapat pengurus"></div>
+              <div><label>Tanggal</label><input type="date" name="tanggal"></div>
+            </div>
+          </div>
+          <label>Judul / keterangan foto</label>
+          <input name="judul" placeholder="mis. Foto bersama">
           <label>Pilih foto / video (bisa lebih dari satu)</label>
           <input type="file" name="file" accept="image/*,video/*" multiple>
           <label>atau tempel link YouTube / Google Drive</label>
@@ -4605,7 +4611,7 @@
     return m.tipe === 'youtube' ? 'https://www.youtube.com/embed/' + m.fileId + '?rel=0'
                                 : 'https://drive.google.com/file/d/' + m.fileId + '/preview';
   }
-  function labelMedia(m) { return [m.judul, m.namaKeg].filter(Boolean).join(' · '); }
+  function labelMedia(m) { return [m.judul, m.namaKeg, m.luar && m.tanggal ? tglIndo(m.tanggal) : ''].filter(Boolean).join(' · '); }
 
   // ----- layar kader: slideshow foto bergerak + video -----
   let SLIDE = { timer: null, i: 0, n: 0 };
@@ -4788,8 +4794,9 @@
   async function uploadGaleri(e) {
     e.preventDefault();
     const f = e.target, b = $('btnUpload'), pr = $('progresUpload');
-    const info = { idKeg: f.idKeg.value, judul: f.judul.value.trim() };
+    const info = { idKeg: f.idKeg.value, judul: f.judul.value.trim(), acara: f.acara.value.trim(), tanggal: f.tanggal.value };
     const files = Array.from(f.file.files), link = f.link.value.trim();
+    if (!info.idKeg && !info.acara) { toast('Isi nama acara / momen dokumentasinya.', true); f.acara.focus(); return; }
     if (!files.length && !link) { toast('Pilih file atau tempel link terlebih dahulu.', true); return; }
     const maks = (DATA.config.maksUploadMb || 20) * 1024 * 1024;
     sibuk(b, 'Mengunggah…');
@@ -4808,7 +4815,7 @@
         berhasil++;
       }
       if (link) { pr.textContent = 'Menyimpan link…'; DATA = await panggil('tambahLinkMedia', PW, info, link); berhasil++; }
-      f.reset(); render();
+      f.reset(); f.idKeg.value = info.idKeg; f.acara.value = info.acara; f.tanggal.value = info.tanggal; aturFormGaleri(); render();
       toast(`${berhasil} item berhasil ditambahkan ke galeri.`);
     } catch (err) {
       toast(err.message, true);
@@ -4822,15 +4829,20 @@
     catch (e) { toast(e.message, true); }
   }
 
+  function aturFormGaleri() { $('isianLuarKeg').hidden = !!$('pilihKegGaleri').value; }
+  let SARING_GALERI = '';
   function renderGaleriAdmin() {
     const sel = $('pilihKegGaleri'), lama = sel.value;
-    sel.innerHTML = '<option value="">— Umum / tanpa kegiatan —</option>' +
-      DATA.kegiatan.map(k => `<option value="${esc(k.id)}">${esc(tglIndo(k.tanggal))} · ${esc(k.nama)}</option>`).join('');
-    sel.value = lama;
+    sel.innerHTML = '<option value="">📷 Di luar kegiatan (rapat, silaturahmi, aksi, dll.)</option>' +
+      '<optgroup label="Kegiatan">' + DATA.kegiatan.map(k => `<option value="${esc(k.id)}">${esc(tglIndo(k.tanggal))} · ${esc(k.nama)}</option>`).join('') + '</optgroup>';
+    sel.value = lama; aturFormGaleri();
     $('maksMb').textContent = DATA.config.maksUploadMb || 20;
 
-    const g = DATA.galeri || [];
-    $('listGaleri').innerHTML = g.length ? '<div class="grid-media">' + g.map(m => `
+    const semua = DATA.galeri || [], nLuar = semua.filter(m => m.luar).length;
+    const g = semua.filter(m => !SARING_GALERI || (SARING_GALERI === 'luar' ? m.luar : !m.luar));
+    const chip = (v, t) => `<button type="button" class="btn ${SARING_GALERI === v ? '' : 'sek'} kecil" onclick="SARING_GALERI='${v}';renderGaleriAdmin()">${t}</button>`;
+    $('listGaleri').innerHTML = (semua.length ? `<div class="baris-aksi" style="margin-bottom:10px">${chip('', 'Semua (' + semua.length + ')')}${chip('keg', 'Kegiatan (' + (semua.length - nLuar) + ')')}${chip('luar', 'Di luar kegiatan (' + nLuar + ')')}</div>` : '') +
+      (g.length ? '<div class="grid-media">' + g.map(m => `
       <div class="media">
         ${m.tipe === 'foto'
           ? `<div class="thumb" style="background-image:url('${srcFoto(m, 400)}')"></div>`
@@ -4838,10 +4850,10 @@
             ? `<div class="thumb" style="background-image:url('https://i.ytimg.com/vi/${esc(m.fileId)}/hqdefault.jpg')">▶️</div>`
             : '<div class="thumb">🎬</div>'}
         <div class="ket"><b>${esc(m.judul || (m.tipe === 'foto' ? 'Foto' : 'Video'))}</b><br>
-          <small>${esc(m.namaKeg || 'Umum')}</small>
+          <small>${m.luar ? '📷 ' : '📅 '}${esc(m.namaKeg || (m.luar ? 'Di luar kegiatan' : 'Kegiatan'))}${m.tanggal ? ' · ' + esc(tglIndo(m.tanggal)) : ''}</small>
           <button class="btn hapus kecil" onclick="hapusMedia('${esc(m.id)}')">Hapus</button></div>
       </div>`).join('') + '</div>'
-      : '<p class="kosong">Galeri masih kosong.</p>';
+      : '<p class="kosong">' + (semua.length ? 'Tidak ada item pada pilihan ini.' : 'Galeri masih kosong.') + '</p>');
   }
 
   function cetak() {

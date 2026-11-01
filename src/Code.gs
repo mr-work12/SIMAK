@@ -104,7 +104,7 @@ const SHEET = {
   LOKASI:   { nama: 'Lokasi',    header: ['ID', 'Nama Lokasi', 'Latitude', 'Longitude', 'Radius (m)', 'Dibuat'] },
   KEGIATAN: { nama: 'Kegiatan',  header: ['ID', 'Nama Kegiatan', 'Tanggal', 'Waktu', 'Tempat', 'Keterangan', 'Dibuat', 'Status', 'ID Lokasi', 'ID Kalender', 'Sertifikat', 'Nomor Surat Peserta', 'Latar Sertifikat', 'Nomor Surat Panitia', 'Sertifikat Dibuka', 'Penanda Tangan', 'Desain Sertifikat', 'Status Siaran', 'Jumlah Hari', 'Minimal Hadir Sertifikat'] },
   ABSENSI:  { nama: 'Absensi',   header: ['ID Kegiatan', 'Nama Kegiatan', 'Tanggal Kegiatan', 'ID Kader', 'Nama Kader', 'Status', 'Dicatat', 'Sumber', 'Jarak (m)', 'Koordinat', 'Hari Ke'] },
-  GALERI:   { nama: 'Galeri',    header: ['ID', 'ID Kegiatan', 'Judul', 'Tipe', 'File ID', 'Link', 'Dibuat'] },
+  GALERI:   { nama: 'Galeri',    header: ['ID', 'ID Kegiatan', 'Judul', 'Tipe', 'File ID', 'Link', 'Dibuat', 'Acara (luar kegiatan)', 'Tanggal'] },
   DAD:      { nama: 'Pendaftar DAD', header: ['ID', 'Nama', 'NPM', 'Prodi', 'Semester', 'Email', 'No. HP', 'Alamat Sekarang', 'Motivasi', 'Tanggal Daftar', 'Status', 'Diperbarui', 'Catatan Admin',
     'Jenis Kelamin', 'Tempat Lahir', 'Tanggal Lahir', 'Alamat Asal', 'Sosial Media', 'Motto', 'Perguruan Tinggi',
     'Riwayat Pendidikan', 'Riwayat Organisasi', 'Buku Dibaca', 'Karya', 'Target', 'Foto', 'Formulir PDF', 'Tahun Daftar', 'Data Formulir (sistem)'] },
@@ -2480,14 +2480,25 @@ function galeri_() {
   const namaKeg = {};
   rows_('KEGIATAN').forEach(r => { namaKeg[r[0]] = r[1]; });
   return rows_('GALERI').map(r => ({
-    id: r[0], idKeg: r[1], namaKeg: namaKeg[r[1]] || '', judul: r[2], tipe: r[3],
-    fileId: r[4], link: r[5], dibuat: fmt_(r[6], 'yyyy-MM-dd HH:mm')
+    id: r[0], idKeg: r[1], luar: !r[1], namaKeg: r[1] ? (namaKeg[r[1]] || '') : String(r[7] || ''), judul: r[2], tipe: r[3],
+    fileId: r[4], link: r[5], dibuat: fmt_(r[6], 'yyyy-MM-dd HH:mm'), tanggal: fmt_(r[8] || '')
   })).sort((a, b) => b.dibuat.localeCompare(a.dibuat));
 }
 
+/** Info dokumentasi: untuk kegiatan tertentu, atau di luar kegiatan (rapat, silaturahmi, aksi, dll.). */
+function infoMedia_(info) {
+  info = info || {};
+  const idKeg = String(info.idKeg || '').trim();
+  if (idKeg && !rows_('KEGIATAN').some(r => r[0] === idKeg)) throw new Error('Kegiatan tidak ditemukan.');
+  const tgl = String(info.tanggal || '').trim();
+  if (tgl && !/^\d{4}-\d{2}-\d{2}$/.test(tgl)) throw new Error('Format tanggal tidak valid.');
+  return { idKeg: idKeg, judul: rapiTeks_(info.judul || '').trim().slice(0, 200),
+    acara: idKeg ? '' : rapiTeks_(info.acara || '').trim().slice(0, 150), tanggal: idKeg ? '' : tgl };
+}
 /** Upload 1 file foto/video (dikirim dari browser dalam bentuk base64). */
 function uploadMedia(pw, info, file) {
   cek_(pw);
+  info = infoMedia_(info);
   const tipe = /^image\//.test(file.mime) ? 'foto' : /^video\//.test(file.mime) ? 'video' : '';
   if (!tipe) throw new Error('File harus berupa foto atau video.');
   const bytes = Utilities.base64Decode(file.data);
@@ -2499,7 +2510,7 @@ function uploadMedia(pw, info, file) {
   f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   kunci_(() => {
     const id = idBaru_('GALERI', 'G');
-    sh_('GALERI').appendRow([id, info.idKeg || '', info.judul || '', tipe, f.getId(), f.getUrl(), new Date()]);
+    sh_('GALERI').appendRow([id, info.idKeg, info.judul, tipe, f.getId(), f.getUrl(), new Date(), info.acara, info.tanggal ? "'" + info.tanggal : '']);
   });
   return getData(pw);
 }
@@ -2507,6 +2518,7 @@ function uploadMedia(pw, info, file) {
 /** Tambah video/foto dari link YouTube atau Google Drive. */
 function tambahLinkMedia(pw, info, link) {
   cek_(pw);
+  info = infoMedia_(info);
   link = String(link || '').trim();
   let tipe = '', fid = '', m;
   if ((m = link.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/))) {
@@ -2518,7 +2530,7 @@ function tambahLinkMedia(pw, info, link) {
   }
   kunci_(() => {
     const id = idBaru_('GALERI', 'G');
-    sh_('GALERI').appendRow([id, info.idKeg || '', info.judul || '', tipe, fid, link, new Date()]);
+    sh_('GALERI').appendRow([id, info.idKeg, info.judul, tipe, fid, link, new Date(), info.acara, info.tanggal ? "'" + info.tanggal : '']);
   });
   return getData(pw);
 }
@@ -2753,7 +2765,7 @@ function dataPeserta(email, nim) {
       isi: tglIndo_(r[2]) + (fmt_(r[3], 'HH:mm') ? ' · ' + fmt_(r[3], 'HH:mm') : '') + (lok ? ' · ' + lok.nama : '') });
   });
   galeri_().slice(0, 10).forEach(m => notif.push({ waktu: m.dibuat + ':00', ikon: m.tipe === 'foto' ? '🖼️' : '🎬',
-    judul: (m.tipe === 'foto' ? 'Foto' : 'Video') + ' kegiatan baru', isi: [m.judul, m.namaKeg].filter(Boolean).join(' · ') }));
+    judul: (m.tipe === 'foto' ? 'Foto' : 'Video') + ' dokumentasi baru', isi: [m.judul, m.namaKeg].filter(Boolean).join(' · ') }));
   rows_('SERTIFIKAT').forEach(r => {
     if (r[2] === p[0] && r[7] instanceof Date && dibuka[r[0]]) notif.push({ waktu: W(r[7]), ikon: '📄',
       judul: 'Sertifikat tersedia' + (r[8] && r[8] !== 'Peserta' ? ' (' + r[8] + ')' : ''), isi: r[1], link: r[6] });
