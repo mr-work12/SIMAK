@@ -152,7 +152,7 @@
   @media(min-width:701px){.maskot-panggung{height:330px}}
   @media(prefers-reduced-motion:reduce){.maskot-panggung img,.maskot-bintang i{animation:none !important}}
   /* --- maskot pendamping yang ikut menggulir (pojok kanan bawah) --- */
-  .maskot-ikut{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:40;display:flex;flex-direction:column;align-items:flex-end;
+  .maskot-ikut{position:fixed;left:calc(100vw - 90px);top:calc(100vh - 110px);z-index:40;display:block;
     pointer-events:none;opacity:0;transform:translateY(30px) scale(.9);transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1)}
   .maskot-ikut.tampil{opacity:1;transform:none}
   .maskot-ikut.tampil .mi-badan,.maskot-ikut.tampil .mi-gelembung.buka{pointer-events:auto}
@@ -167,7 +167,7 @@
   .maskot-ikut.turun .mi-badan{transform:rotate(-6deg) translateY(4px)}
   .maskot-ikut.naik .mi-badan{transform:rotate(6deg) translateY(-6px)}
   .mi-badan img.lompat{animation:maskotLompat .65s cubic-bezier(.3,.7,.4,1)}
-  .mi-gelembung{position:relative;max-width:min(230px,64vw);margin:0 4px 8px 0;background:#fffdf8;color:#7a1414;font-weight:700;font-size:12.5px;line-height:1.35;
+  .mi-gelembung{position:absolute;right:0;bottom:calc(100% + 8px);width:max-content;max-width:min(230px,64vw);background:#fffdf8;color:#7a1414;font-weight:700;font-size:12.5px;line-height:1.35;
     padding:8px 12px;border-radius:14px 14px 4px 14px;box-shadow:0 6px 18px rgba(0,0,0,.22);border:1.5px solid #f2c200;
     opacity:0;transform:translateY(6px) scale(.95);transform-origin:100% 100%;transition:opacity .25s,transform .25s}
   .mi-gelembung.buka{opacity:1;transform:none}
@@ -194,9 +194,16 @@
   @keyframes miPoof{0%{transform:scale(1)}40%{transform:scale(.2) rotate(180deg);opacity:.2}100%{transform:scale(1) rotate(360deg);opacity:1}}
   @media(prefers-reduced-motion:reduce){.mi-terbang,.mi-sosok,.mi-jejak i{animation:none !important}}
   /* saat mengisi kolom di bagian bawah layar (keyboard HP terbuka), maskot pindah ke pojok kanan atas supaya kolom tidak tertutup */
-  .maskot-ikut{transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1),top .35s ease,bottom .35s ease}
-  .maskot-ikut.atas{bottom:auto;top:var(--mi-atas,118px);flex-direction:column-reverse}
-  .maskot-ikut.atas .mi-gelembung{margin:8px 4px 0 0;border-radius:14px 4px 14px 14px;transform-origin:100% 0}
+  /* berkelana ke berbagai sudut & tepi layar (posisi diatur JS lewat left/top) */
+  .maskot-ikut{transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1),left 2.2s cubic-bezier(.45,0,.3,1),top 2.2s cubic-bezier(.45,0,.3,1)}
+  .maskot-ikut.cepat{transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1),left .6s ease,top .6s ease}
+  .maskot-ikut.atas .mi-gelembung{bottom:auto;top:calc(100% + 8px);border-radius:14px 4px 14px 14px;transform-origin:100% 0}
+  .maskot-ikut.kiri .mi-gelembung{right:auto;left:0;border-radius:14px 14px 14px 4px;transform-origin:0 100%}
+  .maskot-ikut.kiri.atas .mi-gelembung{border-radius:4px 14px 14px 14px;transform-origin:0 0}
+  .maskot-ikut.kiri .mi-terbang{animation-name:miTerbangKiri}
+  @keyframes miTerbangKiri{0%,100%{transform:translate(0,0) rotate(0)}18%{transform:translate(30px,-26px) rotate(9deg)}
+    36%{transform:translate(62px,-10px) rotate(4deg)}52%{transform:translate(50px,16px) rotate(-7deg)}
+    70%{transform:translate(16px,12px) rotate(-9deg)}85%{transform:translate(4px,-12px) rotate(3deg)}}
   .maskot-ikut.membimbing .mi-gelembung{background:#fff8dc}
   @media print{.maskot-ikut{display:none !important}}
   .awal-kembali{display:block;margin:0 0 6px}
@@ -647,7 +654,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 11.15</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 11.25</p>
     </div>
   </section>
   <div class="tengah">
@@ -657,7 +664,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 11.15</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 11.25</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1817,14 +1824,33 @@
     }
     return BIMBING_MI[el.name] || BIMBING_MI[el.id] || '';
   }
-  function letakMaskotIkut() {
-    const el = $('maskotIkut'), a = document.activeElement, tinggi = window.visualViewport ? visualViewport.height : innerHeight;
-    const isi = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && $('layarAwal').contains(a);
-    let atas = false;
-    if (isi) { const r = a.getBoundingClientRect(); atas = r.bottom > tinggi - 190 && r.top > 200; }   // kolom berada di area pojok bawah tempat maskot
-    if (atas) { const h = document.querySelector('#layarAwal header.awal-bar'); el.style.setProperty('--mi-atas', ((h && h.getBoundingClientRect().bottom > 0 ? h.getBoundingClientRect().bottom : 0) + 8) + 'px'); }
-    el.classList.toggle('atas', atas);
+  // Tempat-tempat yang dikunjungi maskot (berpindah sendiri tiap beberapa detik)
+  const TEMPAT_MI = ['kanan-bawah', 'kiri-tengah', 'kanan-atas', 'kiri-bawah', 'kanan-tengah', 'kiri-atas'];
+  function kotakTempatMI(nama) {
+    const W = document.documentElement.clientWidth, H = window.visualViewport ? visualViewport.height : innerHeight, b = $('miBadan');
+    const w = b.offsetWidth || 70, h = b.offsetHeight || 93, m = 12;
+    const hd = document.querySelector('#layarAwal header.awal-bar'), atasMin = Math.max(hd ? hd.getBoundingClientRect().bottom : 0, 0) + m;
+    const [sisi, tingkat] = nama.split('-');
+    const x = sisi === 'kiri' ? m : W - w - m;
+    const y = tingkat === 'atas' ? atasMin : tingkat === 'tengah' ? Math.max(atasMin, H * 0.45 - h / 2) : H - h - m;
+    return { x, y, w, h, kiri: sisi === 'kiri', atas: y + h / 2 < H / 2 };
   }
+  function letakMaskotIkut(pindah) {
+    const el = $('maskotIkut'), a = document.activeElement;
+    const isi = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && $('layarAwal').contains(a);
+    if (!MI.tempat) MI.tempat = 'kanan-bawah';
+    if (pindah) { const lain = TEMPAT_MI.filter(t => t !== MI.tempat); MI.tempat = lain[Math.floor(Math.random() * lain.length)]; }
+    if (isi) {            // sedang mengisi kolom: cari tempat yang tidak menutupi kolom itu (termasuk gelembungnya)
+      const r = a.getBoundingClientRect();
+      const tabrak = t => { const k = kotakTempatMI(t), gb = 70, y1 = k.atas ? k.y : k.y - gb, y2 = k.atas ? k.y + k.h + gb : k.y + k.h;
+        return !(y2 < r.top - 6 || y1 > r.bottom + 6); };
+      if (tabrak(MI.tempat)) MI.tempat = ['kanan-bawah', 'kanan-atas', 'kiri-bawah', 'kiri-atas', 'kanan-tengah', 'kiri-tengah'].find(t => !tabrak(t)) || MI.tempat;
+    }
+    const k = kotakTempatMI(MI.tempat);
+    el.style.left = Math.round(k.x) + 'px'; el.style.top = Math.round(k.y) + 'px';
+    el.classList.toggle('kiri', k.kiri); el.classList.toggle('atas', k.atas);
+  }
+
   function perbaruiMaskotIkut() {
     const el = $('maskotIkut'); if (!el) return;
     const tampil = bolehMaskotIkut();
@@ -1838,7 +1864,7 @@
   function bimbingMaskotIkut(e) {
     const a = e.target; if (!a || !/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || !$('layarAwal').contains(a)) return;
     const teks = bimbinganKolom(a); if (!teks) return;
-    MI.bimbing = true; $('maskotIkut').classList.add('membimbing');
+    MI.bimbing = true; $('maskotIkut').classList.add('membimbing', 'cepat'); setTimeout(() => $('maskotIkut').classList.remove('cepat'), 700);
     bicaraMaskotIkut(teks, 600000);
     MI.giliran = !MI.giliran; const im = $('miBadan').querySelector(MI.jk === 'L' ? '.mi-putra' : MI.jk === 'P' ? '.mi-putri' : MI.giliran ? '.mi-putra' : '.mi-putri');
     [im].forEach(x => { if (!x) return; x.classList.remove('lompat'); void x.offsetWidth; x.classList.add('lompat');
@@ -1868,7 +1894,7 @@
     addEventListener('scroll', () => {
       const y = scrollY, el = $('maskotIkut');
       if (Math.abs(y - MI.gulirY) > 3) { el.classList.toggle('turun', y > MI.gulirY); el.classList.toggle('naik', y < MI.gulirY); }
-      MI.gulirY = y; clearTimeout(MI.gulirT); MI.gulirT = setTimeout(() => el.classList.remove('turun', 'naik'), 180);
+      MI.gulirY = y; MI.gulirAkhir = Date.now(); clearTimeout(MI.gulirT); MI.gulirT = setTimeout(() => el.classList.remove('turun', 'naik'), 180);
       nanti();
     }, { passive: true });
     addEventListener('resize', nanti);
@@ -1877,6 +1903,13 @@
     if (window.visualViewport) visualViewport.addEventListener('resize', nanti);
     document.addEventListener('click', () => setTimeout(nanti, 80));
     setTimeout(nanti, 3200);
+    // berkelana: tiap ±7 detik pindah ke tempat lain (tidak saat sedang membimbing kolom / digulir)
+    setInterval(() => {
+      const el = $('maskotIkut');
+      if (!el.classList.contains('tampil') || MI.bimbing || document.hidden || Date.now() - (MI.gulirAkhir || 0) < 1200) return;
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      letakMaskotIkut(true);
+    }, 7000);
   })();
   function tampilBeranda() {
     $('layarAwal').classList.add('mode-beranda');
