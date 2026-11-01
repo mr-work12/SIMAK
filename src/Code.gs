@@ -1200,6 +1200,67 @@ function tambahKegiatan(pw, k) {
   return data;
 }
 
+/** Admin mengubah kegiatan yang sudah dibuat (nama, tanggal, waktu, lokasi, lama hari, dll.).
+ *  Tanggal di data absensi ikut disesuaikan; undangan Google Calendar (jika ada) ikut diperbarui. */
+function ubahKegiatan(pw, id, k) {
+  cek_(pw);
+  k = k || {};
+  const nama = rapiTeks_(k.nama || '').trim(), tanggal = String(k.tanggal || '').trim(), waktu = String(k.waktu || '').trim();
+  if (!nama || !tanggal) throw new Error('Nama kegiatan dan tanggal wajib diisi.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal)) throw new Error('Format tanggal tidak valid.');
+  if (waktu && !/^\d{2}:\d{2}$/.test(waktu)) throw new Error('Format waktu tidak valid.');
+  const lok = petaLokasi_()[k.idLokasi];
+  if (!k.idLokasi || !lok) throw new Error('Pilih lokasi kegiatan.');
+  const n = Math.max(1, Math.min(30, parseInt(k.jumlahHari, 10) || 1));
+  const m = Math.max(1, Math.min(n, parseInt(k.minHadir, 10) || 1));
+  let lama;
+  kunci_(() => {
+    lama = rows_('KEGIATAN').find(r => r[0] === id);
+    if (!lama) throw new Error('Kegiatan tidak ditemukan.');
+    const absen = rows_('ABSENSI').filter(r => r[0] === id && r[7] !== 'Otomatis');
+    const hariMaks = absen.reduce((a, r) => Math.max(a, hariBaris_(r)), 0);
+    if (hariMaks > n) throw new Error('Sudah ada absensi pada hari ke-' + hariMaks + '. Lama kegiatan tidak bisa dikurangi di bawah ' + hariMaks + ' hari.');
+    const sh = sh_('KEGIATAN'), b = barisKeg_(id);
+    if (sh.getMaxColumns() < 20) sh.insertColumnsAfter(sh.getMaxColumns(), 20 - sh.getMaxColumns());
+    sh.getRange(b, 2, 1, 5).setValues([[nama, "'" + tanggal, "'" + waktu, String(k.tempat || '').trim(), String(k.ket || '').trim()]]);
+    sh.getRange(b, 9).setValue(k.idLokasi);
+    sh.getRange(b, 11).setValue(k.sertifikat ? 'Ya' : '');
+    sh.getRange(b, 19, 1, 2).setValues([[n, m]]);
+    // data absensi: nama & tanggal kegiatan ikut diperbarui (tanggal = tanggal mulai + (hari ke - 1))
+    const sa = sh_('ABSENSI'), la = sa.getLastRow();
+    if (la > 1) {
+      const v = sa.getRange(2, 1, la - 1, 11).getValues();
+      let ubah = false;
+      const nilai = v.map(r => {
+        if (r[0] !== id) return [r[1], r[2] instanceof Date || r[2] === '' ? r[2] : "'" + r[2]];   // baris lain ditulis apa adanya
+        ubah = true;
+        return [nama, "'" + (n > 1 ? tambahTgl_(tanggal, hariBaris_(r) - 1) : tanggal)];
+      });
+      if (ubah) sa.getRange(2, 2, la - 1, 2).setValues(nilai);
+    }
+  });
+  const info = ['Perubahan kegiatan disimpan.'];
+  const berubahJadwal = fmt_(lama[2]) !== tanggal || fmt_(lama[3], 'HH:mm') !== waktu || lama[1] !== nama;
+  if (lama[9] && berubahJadwal) {
+    try {
+      const ev = CalendarApp.getDefaultCalendar().getEventById(lama[9]);
+      if (ev) {
+        ev.setTitle(nama + ' | ' + CONFIG.PENYELENGGARA);
+        ev.setLocation([lok.nama, String(k.tempat || '').trim()].filter(Boolean).join(' · '));
+        if (waktu) {
+          const mulai = Utilities.parseDate(tanggal + ' ' + waktu, CONFIG.ZONA_WAKTU, 'yyyy-MM-dd HH:mm');
+          ev.setTime(mulai, new Date(mulai.getTime() + CONFIG.DURASI_KEGIATAN_JAM * 3600000));
+        } else ev.setAllDayDate(Utilities.parseDate(tanggal + ' 12:00', CONFIG.ZONA_WAKTU, 'yyyy-MM-dd HH:mm'));
+        info.push('Jadwal di Google Calendar ikut diperbarui.');
+      }
+    } catch (e) { info.push('Google Calendar gagal diperbarui: ' + e.message); }
+  }
+  if (berubahJadwal && String(lama[17] || '') === 'Sudah dibagikan') info.push('Kegiatan ini sudah pernah dibagikan — kabari kader tentang perubahan jadwal (email/WA lama tidak dikirim ulang).');
+  const data = getData(pw);
+  data.infoKalender = info.join(' ');
+  return data;
+}
+
 function barisKeg_(id) {
   const sh = sh_('KEGIATAN'), v = sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 1), 1).getValues();
   const i = v.findIndex(r => r[0] === id);

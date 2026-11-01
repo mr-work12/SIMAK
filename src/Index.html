@@ -627,7 +627,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 10.05</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 10.30</p>
     </div>
   </section>
   <div class="tengah">
@@ -637,7 +637,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 10.05</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 10.30</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1089,8 +1089,9 @@
     <!-- KEGIATAN -->
     <section id="tab-kegiatan" hidden>
       <div class="kartu">
-        <h2>Tambah Kegiatan</h2>
-        <form onsubmit="tambahKegiatan(event)">
+        <h2 id="judulFormKeg">Tambah Kegiatan</h2>
+        <p class="info" id="infoEditKeg" style="font-size:12px;margin-top:0" hidden></p>
+        <form onsubmit="tambahKegiatan(event)" id="formKegiatan">
           <label>Nama kegiatan *</label>
           <input name="nama" required>
           <div class="grid2">
@@ -1110,7 +1111,8 @@
           <p class="info" style="font-size:12px;margin-top:4px">Kegiatan lebih dari 1 hari (mis. DAD 4 hari 3 malam) → absensi <b>per hari</b> mulai tanggal di atas. Sertifikat hanya untuk yang hadir minimal sekian hari; misalnya DAD 4 hari, minimal 2 → hadir 1 hari tidak dapat, hadir 2–4 hari dapat.</p>
           <label class="cek"><input type="checkbox" name="sertifikat"><span>Kegiatan ini <b>memakai sertifikat</b> (terbit setelah admin menekan <b>Buka</b> di tabel Buka / Tutup Sertifikat)</span></label>
           <p class="info" id="infoTemplateSertif" style="font-size:12px"></p>
-          <button class="btn" type="submit">Tambah Kegiatan</button>
+          <div class="baris-aksi"><button class="btn" type="submit" id="btnFormKeg">Tambah Kegiatan</button>
+            <button class="btn sek" type="button" id="btnBatalEditKeg" onclick="batalEditKegiatan()" hidden>Batal</button></div>
         </form>
       </div>
       <div class="kartu">
@@ -3572,12 +3574,38 @@
   }
 
   // ----- Kegiatan -----
+  let EDIT_KEG = null;
+  function editKegiatan(id) {
+    const k = DATA.kegiatan.find(x => x.id === id); if (!k) return;
+    const f = $('formKegiatan');
+    EDIT_KEG = id;
+    f.nama.value = k.nama || ''; f.tanggal.value = k.tanggal || ''; f.waktu.value = k.waktu || '';
+    f.idLokasi.value = k.idLokasi || ''; f.tempat.value = k.tempat || ''; f.ket.value = k.ket || '';
+    f.jumlahHari.value = k.jumlahHari || 1; f.minHadir.max = k.jumlahHari || 1; f.minHadir.value = k.minHadir || 1; f.sertifikat.checked = !!k.sertifikat;
+    $('judulFormKeg').textContent = '✏️ Edit Kegiatan';
+    $('infoEditKeg').innerHTML = `Mengubah <b>${esc(k.nama)}</b>. Tanggal di data absensi kegiatan ini ikut disesuaikan otomatis.`;
+    $('infoEditKeg').hidden = false;
+    $('btnFormKeg').textContent = 'Simpan Perubahan'; $('btnBatalEditKeg').hidden = false;
+    window.scrollTo({ top: $('judulFormKeg').getBoundingClientRect().top + scrollY - 90, behavior: 'smooth' });
+  }
+  function batalEditKegiatan() {
+    EDIT_KEG = null; $('formKegiatan').reset();
+    $('judulFormKeg').textContent = 'Tambah Kegiatan'; $('infoEditKeg').hidden = true;
+    $('btnFormKeg').textContent = 'Tambah Kegiatan'; $('btnBatalEditKeg').hidden = true;
+  }
   async function tambahKegiatan(e) {
     e.preventDefault();
     const f = e.target, b = f.querySelector('button[type=submit]');
     const obj = { nama: f.nama.value, tanggal: f.tanggal.value, waktu: f.waktu.value,
                   idLokasi: f.idLokasi.value, tempat: f.tempat.value, ket: f.ket.value, sertifikat: f.sertifikat.checked,
                   jumlahHari: Number(f.jumlahHari.value) || 1, minHadir: Number(f.minHadir.value) || 1 };
+    if (EDIT_KEG) {
+      sibuk(b, 'Menyimpan…');
+      try { DATA = await panggil('ubahKegiatan', PW, EDIT_KEG, obj); batalEditKegiatan(); render(); toast(DATA.infoKalender || 'Perubahan disimpan.'); }
+      catch (err) { toast(err.message, true); }
+      finally { sibuk(b); }
+      return;
+    }
     sibuk(b, 'Menyimpan…');
     try { DATA = await panggil('tambahKegiatan', PW, obj); f.reset(); render(); toast('Kegiatan ditambahkan. Belum dibagikan ke Gmail/kalender. ' + (DATA.infoKalender || '')); }
     catch (err) { toast(err.message, true); }
@@ -3630,10 +3658,12 @@
     $('infoTemplateSertif').innerHTML = u
       ? `Nama kader yang hadir otomatis tercetak di sertifikat PDF. Desain sertifikat bisa diubah di <a href="${u}" target="_blank">Google Slides (template)</a>.`
       : 'Nama kader yang hadir otomatis tercetak di sertifikat PDF. (Jalankan <b>setup</b> sekali untuk membuat template sertifikat.)';
+    const lokDipilih = $('pilihLokasiKeg').value;
     $('pilihLokasiKeg').innerHTML = DATA.lokasi.length
       ? '<option value="">— Pilih lokasi —</option>' + DATA.lokasi.map(l =>
           `<option value="${esc(l.id)}">${esc(l.nama)} (radius ${l.radius} m)</option>`).join('')
       : '<option value="">Belum ada lokasi — tambahkan di tab Lokasi</option>';
+    if (lokDipilih) $('pilihLokasiKeg').value = lokDipilih;
 
     $('listKegiatan').innerHTML = DATA.kegiatan.length
       ? `<table><tr><th>Tanggal</th><th>Kegiatan</th><th class="c">Absensi</th><th></th></tr>` +
@@ -3643,7 +3673,7 @@
             <br><small>📆 ${k.jumlahHari > 1 ? `<b>${k.jumlahHari} hari</b> · absensi per hari` : '1 hari'} · sertifikat min. <b>${k.minHadir}×</b> hadir</small>
             <button class="tautan" style="font-size:12px" onclick="aturHari('${esc(k.id)}',this)">✏️ atur hari</button></td>
           <td class="c">${badge(k.status)}<br><small>${esc(k.statusSiaran || 'Belum dibagikan')}</small></td>
-          <td class="c"><button class="btn kecil" ${String(k.statusSiaran || '') === 'Sudah dibagikan' ? 'disabled title="Sudah dibagikan"' : ''} onclick="bagikanKegiatan('${esc(k.id)}',this)">📤 Bagikan</button> <button class="btn hapus kecil" onclick="hapusKegiatan('${esc(k.id)}')">Hapus</button></td>
+          <td class="c"><button class="btn kecil" ${String(k.statusSiaran || '') === 'Sudah dibagikan' ? 'disabled title="Sudah dibagikan"' : ''} onclick="bagikanKegiatan('${esc(k.id)}',this)">📤 Bagikan</button> <button class="btn sek kecil" onclick="editKegiatan('${esc(k.id)}')">✏️ Edit</button> <button class="btn hapus kecil" onclick="hapusKegiatan('${esc(k.id)}')">Hapus</button></td>
         </tr>`).join('') + '</table>'
       : '<p class="kosong">Belum ada kegiatan.</p>';
   }
