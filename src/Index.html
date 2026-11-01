@@ -658,7 +658,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 14.40</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 06.30</p>
     </div>
   </section>
   <div class="tengah">
@@ -668,7 +668,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 14.40</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 06.30</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -3891,6 +3891,35 @@
       $('boxQR').hidden = false; $('boxQR').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } catch (e) { toast(e.message, true); }
   }
+  // Admin mencatat peserta umum secara manual (tamu undangan / luar FAI) tanpa GPS
+  function formTamuManual(k) {
+    const hariBox = Array.from({ length: Math.max(1, k.jumlahHari || 1) }, (_, i) => i + 1).map(h =>
+      `<label style="display:inline-flex;align-items:center;gap:4px;margin:0 12px 6px 0"><input type="checkbox" name="hari" value="${h}" checked> Hari ${h}</label>`).join('');
+    return `
+      <details style="margin-top:12px">
+        <summary style="cursor:pointer;font-weight:600">➕ Tambah peserta umum manual (tamu undangan / luar FAI)</summary>
+        <form onsubmit="tambahTamuManual(event)" style="margin-top:8px">
+          <input type="hidden" name="idKeg" value="${esc(k.id)}">
+          <label>Nama *</label><input name="nama" required>
+          <label>NPM / No. identitas <small>(opsional)</small></label><input name="npm">
+          <label>Asal (prodi/fakultas/instansi) *</label><input name="asal" required>
+          <label>Email <small>(opsional, untuk sertifikat)</small></label><input name="email" type="email">
+          <label>No. HP <small>(opsional)</small></label><input name="hp" inputmode="tel">
+          <label>Hari hadir *</label>
+          <div>${hariBox}</div>
+          <div class="baris-aksi"><button class="btn penuh hijau" type="submit">Simpan sebagai Hadir</button></div>
+        </form>
+      </details>`;
+  }
+  async function tambahTamuManual(e) {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector('button[type=submit]'), d = { hari: [] };
+    ['nama', 'npm', 'asal', 'email', 'hp'].forEach(x => { d[x] = f[x].value; });
+    f.querySelectorAll('input[name=hari]:checked').forEach(c => d.hari.push(Number(c.value)));
+    sibuk(btn, '…');
+    try { DATA = await panggil('tambahTamuManual', PW, f.idKeg.value, d); render(); toast('Peserta umum dicatat Hadir.'); }
+    catch (er) { toast(er.message, true); } finally { sibuk(btn); }
+  }
   function salinLinkTamu(link) {
     const ok = () => toast('Link disalin ✓');
     if (navigator.clipboard) navigator.clipboard.writeText(link).then(ok, () => prompt('Salin link ini:', link));
@@ -3954,6 +3983,7 @@
           `<tr><td>${esc(x.nama)}<br><small style="color:#888">${esc(x.email)} · ${esc(x.waktu)}</small></td><td><small>${esc(x.asal)}</small></td>
           <td>${x.sertifikat ? `<a href="${esc(x.sertifikat)}" target="_blank" rel="noopener">📄</a>` : '<small style="color:#999">belum</small>'}</td></tr>`).join('') + '</table></div>'
           : '<p class="kosong" style="margin:6px 0 0">Belum ada peserta umum yang absen.</p>'}`; })()}
+      ${formTamuManual(k)}
       <h3 class="sub">Nomor surat sertifikat</h3>
       <p style="font-size:12px;color:#666;margin:0 0 6px"><b>Satu nomor surat</b> untuk seluruh peserta dan <b>satu nomor surat</b> untuk seluruh panitia. Kosongkan kolom untuk memakai nomor otomatis.</p>
       <label>Peserta ${k.nomorPesertaOto ? '<small>(otomatis)</small>' : ''}</label>

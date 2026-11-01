@@ -2293,6 +2293,40 @@ function absenTamu(idKeg, d, posisi) {
   });
   return { ok: true, jarak: jarak, nama: nama, hari: hariTamu, jumlahHadir: jmlTamu };
 }
+/**
+ * Admin mencatat peserta umum secara manual (tamu undangan / mahasiswa luar FAI) sebagai Hadir,
+ * tanpa GPS. Email boleh kosong. Bila email sudah ada di kegiatan ini, hari hadirnya digabung.
+ */
+function tambahTamuManual(pw, idKeg, d) {
+  cek_(pw);
+  d = d || {};
+  const nama = rapiTeks_(d.nama).trim(), asal = rapiTeks_(d.asal).trim();
+  const npm = rapiTeks_(d.npm).trim(), hp = rapiTeks_(d.hp).trim();
+  const email = rapiTeks_(d.email).trim().toLowerCase();
+  if (!nama) throw new Error('Nama wajib diisi.');
+  if (!asal) throw new Error('Asal (prodi/fakultas/instansi) wajib diisi.');
+  if (email) cekEmail_(email);
+  kunci_(() => {
+    const keg = rows_('KEGIATAN').find(r => r[0] === idKeg);
+    if (!keg) throw new Error('Kegiatan tidak ditemukan.');
+    const nHari = jumlahHari_(keg);
+    const pilih = Array.isArray(d.hari) ? d.hari : [];
+    const hari = pilih.map(x => parseInt(x, 10)).filter(x => x >= 1 && x <= nHari);
+    if (!hari.length) throw new Error('Pilih minimal satu hari hadir.');
+    const sh = sh_('TAMU'), v = sh.getDataRange().getValues();
+    const i = email ? v.findIndex((r, n) => n > 0 && r[1] === idKeg && String(r[5]).trim().toLowerCase() === email) : -1;
+    const lama = i > 0 ? String(v[i][11] || '').split(',').map(x => x.trim()).filter(Boolean) : [];
+    const gabung = Array.from(new Set(lama.concat(hari.map(String)))).sort((a, b) => a - b);
+    const npmTeks = npm ? "'" + npm : '', hpTeks = hp ? "'" + hp : '', hariTeks = "'" + gabung.join(',');
+    if (i > 0) {
+      // data lama (waktu, jarak, koordinat) tetap; nama & identitas ikut dirapikan
+      sh.getRange(i + 1, 3, 1, 10).setValues([[nama, npmTeks, asal, email, hpTeks, 'Hadir', v[i][8], v[i][9], v[i][10], hariTeks]]);
+    } else {
+      sh.appendRow([idBaru_('TAMU', 'U'), idKeg, nama, npmTeks, asal, email, hpTeks, 'Hadir', new Date(), '', 'Dicatat manual admin', hariTeks]);
+    }
+  });
+  return getData(pw);
+}
 /** Peserta umum mengecek / mengunduh sertifikatnya dengan email yang dipakai saat absen. */
 function sertifikatTamu(idKeg, email) {
   email = String(email || '').trim().toLowerCase();
