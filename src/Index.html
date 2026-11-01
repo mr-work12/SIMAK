@@ -173,6 +173,33 @@
   .mi-gelembung.buka{opacity:1;transform:none}
   @media(min-width:701px){.mi-badan{width:100px;height:132px}}
   @media(prefers-reduced-motion:reduce){.mi-badan img{animation:none !important}.mi-badan{transition:none}}
+  /* --- terbang seperti peri: melayang berputar di sekitar pojok, sayap mengepak, jejak kilau --- */
+  .mi-terbang{position:relative;animation:miTerbang 9s ease-in-out infinite}
+  @keyframes miTerbang{0%,100%{transform:translate(0,0) rotate(0)}18%{transform:translate(-30px,-26px) rotate(-9deg)}
+    36%{transform:translate(-62px,-10px) rotate(-4deg)}52%{transform:translate(-50px,16px) rotate(7deg)}
+    70%{transform:translate(-16px,12px) rotate(9deg)}85%{transform:translate(-4px,-12px) rotate(-3deg)}}
+  .mi-sosok{position:absolute;inset:0;z-index:2;animation:miPutar 11s ease-in-out infinite;transform-style:preserve-3d}
+  @keyframes miPutar{0%,80%{transform:rotateY(0)}88%{transform:rotateY(180deg) scale(1.05)}96%,100%{transform:rotateY(360deg)}}
+  .mi-sayap{position:absolute;left:50%;top:22%;width:0;height:0;z-index:1}
+  .mi-sayap i{position:absolute;top:-6px;width:34px;height:44px;border-radius:60% 40% 55% 45%/60% 60% 40% 40%;
+    background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.95),rgba(190,235,255,.55) 55%,rgba(255,215,90,.25));
+    border:1px solid rgba(242,194,0,.75);box-shadow:0 0 10px rgba(255,236,170,.8);animation:miKepak .22s ease-in-out infinite alternate}
+  .mi-sayap i:first-child{right:0;transform-origin:100% 70%;--arah:-1}
+  .mi-sayap i:last-child{left:0;transform-origin:0 70%;--arah:1;border-radius:40% 60% 45% 55%/60% 60% 40% 40%}
+  @keyframes miKepak{from{transform:rotate(calc(var(--arah) * 18deg)) scaleX(1)}to{transform:rotate(calc(var(--arah) * 4deg)) scaleX(.45)}}
+  .mi-jejak i{position:absolute;right:30%;bottom:20%;font-style:normal;color:#f7d23a;font-size:12px;opacity:0;pointer-events:none;
+    text-shadow:0 0 6px rgba(242,194,0,.9);animation:miKilau 1.8s ease-out infinite}
+  .mi-jejak i:nth-child(2){animation-delay:.45s;right:10%;bottom:45%;font-size:10px}.mi-jejak i:nth-child(3){animation-delay:.9s;right:55%;bottom:5%}
+  .mi-jejak i:nth-child(4){animation-delay:1.35s;right:65%;bottom:55%;font-size:9px}
+  @keyframes miKilau{0%{opacity:0;transform:translate(0,0) scale(.4)}25%{opacity:1}100%{opacity:0;transform:translate(16px,18px) scale(1) rotate(90deg)}}
+  /* --- hanya satu karakter sesuai nama / jenis kelamin --- */
+  .maskot-ikut.hanya-putra .mi-putri,.maskot-ikut.hanya-putri .mi-putra{display:none}
+  .maskot-ikut.hanya-putra .mi-badan{width:38px}.maskot-ikut.hanya-putri .mi-badan{width:44px}
+  .maskot-ikut.hanya-putra .mi-putra,.maskot-ikut.hanya-putri .mi-putri{left:0;top:0;width:100%}
+  @media(min-width:701px){.maskot-ikut.hanya-putra .mi-badan{width:52px}.maskot-ikut.hanya-putri .mi-badan{width:62px}}
+  .maskot-ikut.ganti-sosok .mi-badan{animation:miPoof .6s ease}
+  @keyframes miPoof{0%{transform:scale(1)}40%{transform:scale(.2) rotate(180deg);opacity:.2}100%{transform:scale(1) rotate(360deg);opacity:1}}
+  @media(prefers-reduced-motion:reduce){.mi-terbang,.mi-sosok,.mi-sayap i,.mi-jejak i{animation:none !important}}
   /* saat mengisi kolom di bagian bawah layar (keyboard HP terbuka), maskot pindah ke pojok kanan atas supaya kolom tidak tertutup */
   .maskot-ikut{transition:opacity .35s,transform .45s cubic-bezier(.3,1.4,.5,1),top .35s ease,bottom .35s ease}
   .maskot-ikut.atas{bottom:auto;top:var(--mi-atas,118px);flex-direction:column-reverse}
@@ -627,7 +654,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 10.30</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 1 Nov 2026 · 11.10</p>
     </div>
   </section>
   <div class="tengah">
@@ -637,7 +664,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 10.30</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 1 Nov 2026 · 11.10</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1517,9 +1544,13 @@
 <!-- Maskot pendamping: ikut menemani saat peserta menggulir halaman publik -->
 <div id="maskotIkut" class="maskot-ikut" aria-live="polite">
   <div class="mi-gelembung" id="miGelembung"></div>
-  <div class="mi-badan" id="miBadan" role="button" tabindex="0" aria-label="Maskot pendamping, ketuk untuk tips" onclick="sapaMaskotIkut()"
-    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sapaMaskotIkut()}">
-    <img class="mi-putra" alt="" draggable="false"><img class="mi-putri" alt="" draggable="false">
+  <div class="mi-terbang">
+    <span class="mi-jejak" aria-hidden="true"><i>✦</i><i>✧</i><i>✦</i><i>✧</i></span>
+    <div class="mi-badan" id="miBadan" role="button" tabindex="0" aria-label="Maskot pendamping, ketuk untuk tips" onclick="sapaMaskotIkut()"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sapaMaskotIkut()}">
+      <span class="mi-sayap" aria-hidden="true"><i></i><i></i></span>
+      <div class="mi-sosok"><img class="mi-putra" alt="" draggable="false"><img class="mi-putri" alt="" draggable="false"></div>
+    </div>
   </div>
 </div>
 
@@ -1680,7 +1711,7 @@
     setTimeout(() => { g.textContent = SAPAAN_MASKOT[iSapaMaskot]; g.classList.remove('ganti'); }, 220);
   }
   // ----- Maskot pendamping: muncul di pojok saat maskot beranda tidak terlihat, bergoyang mengikuti arah gulir, memberi tips sesuai bagian -----
-  const MI = { tutup: false, konteks: '', tipe: 0, timer: null, gulirY: 0, gulirT: null };
+  const MI = { konteks: '', tipe: 0, timer: null, gulirY: 0, gulirT: null, jk: '' };
   const TIPS_MI = {
     beranda: ['Ayo daftar DAD! Tekan tombol kuning di atas 👆', 'Sudah ikut DAD? Buat akun kader ya 🔑'],
     dadA: ['Isi data diri dengan benar ya 😊', 'Pas foto 3×4 latar merah 📸'],
@@ -1694,6 +1725,48 @@
     pilih: ['Belum ikut DAD? Pilih Daftar DAD 📝'],
     masuk: ['Belum punya PIN? Kosongkan saja, nanti dibuatkan 😉', 'Lupa PIN? Tekan "Lupa PIN?" 🔐']
   };
+  // ----- Karakter menyesuaikan nama / jenis kelamin peserta -----
+  const NAMA_PUTRI = 'siti sri dewi putri ayu fitri fitria fitriani rahma rahmawati nabila aisyah aisah aisya fatimah fatma khadijah zahra zahro annisa anisa nisa nisah salsabila salsa dinda indah wulan sari lestari rina rini yuni yanti ningsih ratna intan mutiara melati bunga citra novi novita desi diva lia nia tia vira zulfa ulfa hana hanna nadia nadya naila nayla syifa syafa kirana keisha amelia amel cinta laila lailatul maryam mariam halimah hafsah ainun aini azizah latifah farah yulia julia juliana kartika meli melia mela sinta shinta tiara vina wanda puspita rani reni sinta suci nurul nurhayati nuraini cahaya mawar tika fika riska rizka rika vivi winda yolanda zakiyah zakia husna hasna khoirunnisa alya aulia kayla nayla sabrina sherly silvia sylvia sofia sofiya tari tasya anggun anggi dina dini eva evi lina lusi maya mira nanda nindi okta ola rara resti santi septi sela selvi siska tri umi widya yeni yuli zaskia'.split(' ');
+  const NAMA_PUTRA = 'muhammad muhamad mohammad mohamad moh muh m ahmad akhmad abdul abdullah abd rizki rizky riski putra saputra pratama budi agus andi dedi dedy deni eko fajar hendra irfan ilham rahmat rahman reza yusuf ibrahim ismail hasan husein husain ali umar usman bayu dimas adi aditya arif bagus bima dani doni fadli fadil fauzan firman galih gilang hafiz hamzah iqbal joko kevin lutfi wahyu yoga zaki zainal alzawan rafi rafli randi rendi rio ridho ridwan rudi samsul sandi satria wawan yudi yusril yogi aldi alfin alif amir anwar arya azka bambang fikri habib haikal hanif hakim iman irwan kurniawan mahmud malik nabil naufal rasyid rangga romi sahrul sultan syahrul taufik teguh tommy wildan yahya zul zulkifli'.split(' ');
+  function tebakJenisNama(nama) {
+    const t = rapiTeks(String(nama || '')).toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/).filter(Boolean);
+    if (!t.length) return '';
+    let p = 0, l = 0;
+    t.forEach((x, i) => {
+      const bobot = i === 0 ? 2 : 1;
+      if (NAMA_PUTRI.includes(x)) p += bobot;
+      if (NAMA_PUTRA.includes(x)) l += bobot;
+      if (/(wati|ningsih|yanti|ningrum|nisa|fitri)$/.test(x)) p += 1;
+      if (/(ullah|uddin|udin|wan|man)$/.test(x) && !NAMA_PUTRI.includes(x)) l += 1;
+    });
+    return p > l ? 'P' : l > p ? 'L' : '';
+  }
+  function aturSosokMaskot(jk, sapa) {
+    jk = jk === 'Laki-laki' || jk === 'L' ? 'L' : jk === 'Perempuan' || jk === 'P' ? 'P' : '';
+    if (jk === (MI.jk || '')) return;
+    MI.jk = jk; try { sessionStorage.setItem('maskotJk', jk); } catch (e) {}
+    const el = $('maskotIkut');
+    el.classList.add('ganti-sosok'); setTimeout(() => el.classList.remove('ganti-sosok'), 650);
+    setTimeout(() => { el.classList.toggle('hanya-putra', jk === 'L'); el.classList.toggle('hanya-putri', jk === 'P'); }, 240);
+    if (sapa) { bicaraMaskotIkut(sapa, 3500); MI.diamSampai = Date.now() + 3500; }
+  }
+  function cekNamaUntukMaskot(e) {
+    const a = e.target; if (!a || !$('layarAwal').contains(a)) return;
+    const f = a.form;
+    if (a.name === 'jk' && a.value) {
+      if (e.type !== 'change') return;
+      aturSosokMaskot(a.value); bicaraMaskotIkut(a.value === 'Perempuan' ? 'Siap, aku temani ya kak 🧚‍♀️' : 'Siap, aku temani ya kak 🧚‍♂️', 3500); MI.diamSampai = Date.now() + 3500; return;
+    }
+    if (a.name !== 'nama') return;
+    if (f && f.jk && f.jk.value) return;                 // jenis kelamin sudah dipilih: itu yang dipakai
+    const jk = tebakJenisNama(a.value);
+    if (!jk) return;
+    aturSosokMaskot(jk);
+    if (e.type === 'change') { bicaraMaskotIkut('Halo, ' + a.value.trim().split(/\s+/)[0] + '! Aku temani ya ✨', 3500); MI.diamSampai = Date.now() + 3500; }
+  }
+  try { const j = sessionStorage.getItem('maskotJk'); if (j) setTimeout(() => aturSosokMaskot(j), 0); } catch (e) {}
+  document.addEventListener('input', cekNamaUntukMaskot);
+  document.addEventListener('change', cekNamaUntukMaskot);
   function terlihatDiLayar(el) { if (!el || !el.offsetParent) return false; const r = el.getBoundingClientRect(); return r.bottom > 40 && r.top < innerHeight - 40; }
   function konteksMaskotIkut() {
     if ($('layarAwal').classList.contains('mode-beranda')) return 'beranda';
@@ -1768,14 +1841,14 @@
     letakMaskotIkut();
     if (MI.bimbing) return;                     // sedang membimbing satu kolom: jangan diganti tips bagian
     const k = konteksMaskotIkut();
-    if (k !== MI.konteks) { MI.konteks = k; MI.tipe = 0; bicaraMaskotIkut(TIPS_MI[k][0]); }
+    if (k !== MI.konteks) { MI.konteks = k; MI.tipe = 0; if (!(Date.now() < MI.diamSampai)) bicaraMaskotIkut(TIPS_MI[k][0]); }
   }
   function bimbingMaskotIkut(e) {
     const a = e.target; if (!a || !/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || !$('layarAwal').contains(a)) return;
     const teks = bimbinganKolom(a); if (!teks) return;
     MI.bimbing = true; $('maskotIkut').classList.add('membimbing');
     bicaraMaskotIkut(teks, 600000);
-    MI.giliran = !MI.giliran; const im = $('miBadan').querySelector(MI.giliran ? '.mi-putra' : '.mi-putri');
+    MI.giliran = !MI.giliran; const im = $('miBadan').querySelector(MI.jk === 'L' ? '.mi-putra' : MI.jk === 'P' ? '.mi-putri' : MI.giliran ? '.mi-putra' : '.mi-putri');
     [im].forEach(x => { if (!x) return; x.classList.remove('lompat'); void x.offsetWidth; x.classList.add('lompat');
       x.addEventListener('animationend', () => x.classList.remove('lompat'), { once: true }); });
     perbaruiMaskotIkut();
@@ -1785,7 +1858,7 @@
       const a = document.activeElement;
       if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && $('layarAwal').contains(a)) return;   // pindah ke kolom lain: biar bimbingMaskotIkut yang urus
       MI.bimbing = false; $('maskotIkut').classList.remove('membimbing');
-      clearTimeout(MI.timer); MI.timer = setTimeout(() => $('miGelembung').classList.remove('buka'), 2500);
+      if (!(Date.now() < MI.diamSampai)) { clearTimeout(MI.timer); MI.timer = setTimeout(() => $('miGelembung').classList.remove('buka'), 2500); }
       perbaruiMaskotIkut();
     }, 150);
   }
