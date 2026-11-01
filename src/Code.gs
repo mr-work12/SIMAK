@@ -2319,8 +2319,9 @@ function tambahTamuManual(pw, idKeg, d) {
     const gabung = Array.from(new Set(lama.concat(hari.map(String)))).sort((a, b) => a - b);
     const npmTeks = npm ? "'" + npm : '', hpTeks = hp ? "'" + hp : '', hariTeks = "'" + gabung.join(',');
     if (i > 0) {
-      // data lama (waktu, jarak, koordinat) tetap; nama & identitas ikut dirapikan
-      sh.getRange(i + 1, 3, 1, 10).setValues([[nama, npmTeks, asal, email, hpTeks, 'Hadir', v[i][8], v[i][9], v[i][10], hariTeks]]);
+      // data lama (waktu, jarak, koordinat) tetap; NPM & HP lama dipertahankan bila kolom ini dikosongkan
+      const npmSimpan = npm ? npmTeks : v[i][3], hpSimpan = hp ? hpTeks : v[i][6];
+      sh.getRange(i + 1, 3, 1, 10).setValues([[nama, npmSimpan, asal, email, hpSimpan, 'Hadir', v[i][8], v[i][9], v[i][10], hariTeks]]);
     } else {
       sh.appendRow([idBaru_('TAMU', 'U'), idKeg, nama, npmTeks, asal, email, hpTeks, 'Hadir', new Date(), '', 'Dicatat manual admin', hariTeks]);
     }
@@ -2526,8 +2527,9 @@ function infoMedia_(info) {
   if (idKeg && !rows_('KEGIATAN').some(r => r[0] === idKeg)) throw new Error('Kegiatan tidak ditemukan.');
   const tgl = String(info.tanggal || '').trim();
   if (tgl && !/^\d{4}-\d{2}-\d{2}$/.test(tgl)) throw new Error('Format tanggal tidak valid.');
-  return { idKeg: idKeg, judul: rapiTeks_(info.judul || '').trim().slice(0, 200),
-    acara: idKeg ? '' : rapiTeks_(info.acara || '').trim().slice(0, 150), tanggal: idKeg ? '' : tgl };
+  const acara = idKeg ? '' : rapiTeks_(info.acara || '').trim().slice(0, 150);
+  if (!idKeg && !acara) throw new Error('Isi nama acara / momen dokumentasinya.');
+  return { idKeg: idKeg, judul: rapiTeks_(info.judul || '').trim().slice(0, 200), acara: acara, tanggal: idKeg ? '' : tgl };
 }
 /** Upload 1 file foto/video (dikirim dari browser dalam bentuk base64). */
 function uploadMedia(pw, info, file) {
