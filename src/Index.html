@@ -343,7 +343,6 @@
   /* di dashboard kader, pita notifikasi tidak menempel agar menu tetap terlihat saat digulir */
   #layarPeserta .banner-notif{position:relative;top:auto}
   /* video sudah tampil di tab Dokumentasi Kegiatan → kartu video lama tidak ditampilkan dobel */
-  #psGaleriKartu{display:none !important}
   /* ===== Dashboard kader: tampilan baru ===== */
   #layarPeserta{background:linear-gradient(180deg,#f6eee6 0,#faf6f1 260px)}
   #layarPeserta main{max-width:760px}
@@ -362,7 +361,7 @@
     background:conic-gradient(var(--hijau) calc(var(--p)*1%),#eee3d6 0)}
   .ps-stat .cincin i{width:36px;height:36px;border-radius:50%;background:#fff;display:grid;place-items:center;font-style:normal;font-size:11px;font-weight:800;color:var(--hijau)}
   .ps-dashboard{display:block;margin:0 0 18px;background:#fff;border:1px solid #efe4d8;border-radius:16px;padding:14px 12px 6px;box-shadow:0 4px 18px rgba(94,15,16,.06)}
-  .ps-menu-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 6px}
+  .ps-menu-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 6px}
   .ps-dashboard button.ps-dash-item{border:0;box-shadow:none;background:transparent;text-align:center;padding:6px 2px 10px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:6px}
   .ps-dashboard button.ps-dash-item:hover,.ps-dashboard button.ps-dash-item:focus-visible{background:#fbf3e6;box-shadow:none}
   .ps-dash-item .ikon{width:50px;height:50px;border-radius:15px;display:grid !important;place-items:center;font-size:23px;margin:0 !important}
@@ -658,7 +657,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 07.20</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 07.50</p>
     </div>
   </section>
   <div class="tengah">
@@ -668,7 +667,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 07.20</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 07.50</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -910,12 +909,10 @@
   <nav class="ps-nav" aria-label="Navigasi akun peserta">
     <button type="button" data-ps-menu="beranda" aria-current="page" onclick="bukaBagianPeserta('beranda')">🏠 Dashboard</button>
     <button type="button" data-ps-menu="dokumentasi" onclick="bukaBagianPeserta('dokumentasi')">📷 Dokumentasi</button>
-    <button type="button" data-ps-menu="absensi" onclick="bukaBagianPeserta('absensi')">📝 Absensi</button>
-    <button type="button" data-ps-menu="kehadiran" onclick="bukaBagianPeserta('kehadiran')">📊 Kehadiran</button>
+    <button type="button" data-ps-menu="absensi" onclick="bukaBagianPeserta('absensi')">📝 Absensi &amp; Kehadiran</button>
     <button type="button" data-ps-menu="perkaderan" onclick="bukaBagianPeserta('perkaderan')">🎓 Perkaderan</button>
-    <button type="button" data-ps-menu="kta" onclick="bukaBagianPeserta('kta')">🪪 KTA &amp; Syahadah</button>
     <button type="button" data-ps-menu="sertifikat" onclick="bukaBagianPeserta('sertifikat')">🏅 Sertifikat</button>
-    <button type="button" data-ps-menu="profil" onclick="bukaBagianPeserta('profil')">👤 Profil Saya</button>
+    <button type="button" data-ps-menu="profil" onclick="bukaBagianPeserta('profil')">👤 Profil, KTA &amp; Syahadah</button>
   </nav>
   <div id="bannerNotif" class="banner-notif" hidden></div>
   <div id="panelNotif" class="panel-notif" hidden onclick="if(event.target===this)tutupNotif()">
@@ -932,14 +929,12 @@
     <section class="ps-dashboard ps-page-active" data-ps-page="beranda" aria-label="Menu cepat peserta">
       <h2 class="ps-sub">Menu</h2>
       <div class="ps-menu-grid">
-        <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('absensi')"><span class="ikon w1">📝</span><b>Absensi</b></button>
-        <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('kehadiran')"><span class="ikon w2">📊</span><b>Kehadiran</b></button>
+        <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('absensi')"><span class="ikon w1">📝</span><b>Absensi &amp; Kehadiran</b></button>
         <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('dokumentasi')"><span class="ikon w3">📷</span><b>Dokumentasi</b></button>
         <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('sertifikat')"><span class="ikon w4">🏅</span><b>Sertifikat</b></button>
         <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('perkaderan')"><span class="ikon w5">🎓</span><b>Perkaderan</b></button>
-        <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('kta')"><span class="ikon w6">🪪</span><b>KTA &amp; Syahadah</b></button>
         <button type="button" class="ps-dash-item" onclick="bukaNotif()"><span class="ikon w7">🔔</span><b>Notifikasi</b></button>
-        <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('profil')"><span class="ikon w8">👤</span><b>Profil</b></button>
+        <button type="button" class="ps-dash-item" onclick="bukaBagianPeserta('profil')"><span class="ikon w8">👤</span><b>Profil, KTA &amp; Syahadah</b></button>
       </div>
     </section>
     <div class="kartu ps-page-active" id="psRingkasanKegiatanKartu" data-ps-page="beranda">
@@ -967,10 +962,6 @@
       <div id="psTerbuka"></div>
       <p class="info">Absen <b>Hadir</b> memakai GPS dan hanya bisa dilakukan di lokasi kegiatan. Izin dan Sakit bisa dari mana saja.<br>📅 Jadwal kegiatan otomatis masuk ke <b>Google Calendar</b> di HP Anda.</p>
     </div>
-    <div class="kartu" id="psGaleriKartu" data-ps-page="dokumentasi" hidden>
-      <h2>Video Kegiatan</h2>
-      <div id="psGaleri"></div>
-    </div>
     <div class="kartu" id="psJenjangKartu" data-ps-page="perkaderan">
       <h2>Riwayat Perkaderan</h2>
       <div class="jenjang" id="psJenjang"></div>
@@ -988,16 +979,8 @@
       </details>
       <p class="info" style="font-size:12px">Riwayat baru berstatus ⏳ <b>menunggu verifikasi</b> admin. DAD diambil dari tahun DAD saat mendaftar.</p>
     </div>
-    <div class="kartu" id="psSyahadahKartu" data-ps-page="kta">
-      <h2>📜 Syahadah DAD</h2>
-      <div id="psSyahadah"></div>
-    </div>
-    <div class="kartu" id="psKTAKartu" data-ps-page="kta">
-      <h2>KTA IMM</h2>
-      <div id="psKTA"></div>
-    </div>
-    <div class="statistik empat" id="psRekap" data-ps-page="kehadiran"></div>
-    <div class="kartu" id="psRiwayatKartu" data-ps-page="kehadiran">
+    <div class="statistik empat" id="psRekap" data-ps-page="absensi"></div>
+    <div class="kartu" id="psRiwayatKartu" data-ps-page="absensi">
       <h2>Riwayat Kehadiran</h2>
       <div class="wrap" id="psRiwayat"></div>
     </div>
@@ -1037,7 +1020,14 @@
           <p class="info" style="font-size:12px">Setelah PIN diganti, perangkat lain yang masih masuk dengan akun ini akan otomatis keluar.</p>
           <button class="btn" type="submit">Ganti PIN</button>
         </form></details>
-      <button class="btn sek kecil" style="margin-top:10px" onclick="pilihFotoProfil()">📷 Ganti foto profil</button>
+    </div>
+    <div class="kartu" id="psKTAKartu" data-ps-page="profil">
+      <h2>🪪 KTA IMM</h2>
+      <div id="psKTA"></div>
+    </div>
+    <div class="kartu" id="psSyahadahKartu" data-ps-page="profil">
+      <h2>📜 Syahadah DAD</h2>
+      <div id="psSyahadah"></div>
     </div>
   </main>
   <nav class="ps-bawah" aria-label="Menu utama">
@@ -1065,7 +1055,7 @@
     <button data-tab="beranda" class="aktif" onclick="bukaTab('beranda')">Beranda</button>
     <button data-tab="absensi" onclick="bukaTab('absensi')">Absensi</button>
     <button data-tab="kegiatan" onclick="bukaTab('kegiatan')">Kegiatan</button>
-    <button data-tab="lokasi" onclick="bukaTab('lokasi')">Lokasi</button>
+    <button data-tab="sertifikat" onclick="bukaTab('sertifikat')">Sertifikat</button>
     <button data-tab="peserta" onclick="bukaTab('peserta')">Kader <span id="jumlahKTA"></span></button>
     <button data-tab="galeri" onclick="bukaTab('galeri')">Galeri</button>
     <button data-tab="dad" onclick="bukaTab('dad')">DAD <span id="jumlahDAD"></span></button>
@@ -1151,6 +1141,30 @@
         <div class="wrap" id="listKegiatan"></div>
       </div>
 
+      <div class="kartu" id="kartuLokasi">
+        <h2>📍 Lokasi Absensi</h2>
+        <p class="info" style="margin-top:0">Titik GPS tempat kader & peserta umum bisa absen. Dipilih saat menambah / mengedit kegiatan.</p>
+        <div class="wrap" id="listLokasi"></div>
+        <details id="detTambahLokasi" style="margin-top:10px"><summary style="cursor:pointer;color:var(--biru);font-size:14px">+ Tambah lokasi</summary>
+          <form onsubmit="tambahLokasi(event)">
+            <label>Nama lokasi *</label>
+            <input name="nama" required placeholder="mis. Masjid Kampus">
+            <label>Koordinat * (latitude, longitude)</label>
+            <input name="koordinat" id="inputKoordinat" required placeholder="-3.759000, 102.265500">
+            <div class="baris-aksi">
+              <button type="button" class="btn sek kecil" id="btnLokasiSaya" onclick="pakaiLokasiSaya()">📍 Pakai lokasi saya sekarang</button>
+            </div>
+            <p class="info">Atau buka Google Maps, tekan lama pada titik lokasi, lalu salin angka koordinatnya ke sini.</p>
+            <label>Radius (meter)</label>
+            <input type="number" name="radius" id="inputRadius" min="10" value="100">
+            <button class="btn" type="submit">Simpan Lokasi</button>
+          </form>
+        </details>
+      </div>
+    </section>
+
+    <!-- SERTIFIKAT -->
+    <section id="tab-sertifikat" hidden>
       <div class="kartu">
         <h2>📄 Buka / Tutup Sertifikat</h2>
         <p class="info" style="margin-top:0">Sertifikat <b>tidak langsung muncul</b> setelah absen. Tekan <b>Buka</b> saat kegiatan benar-benar selesai,
@@ -1255,65 +1269,13 @@
       </div>
     </section>
 
-    <!-- LOKASI -->
-    <section id="tab-lokasi" hidden>
-      <div class="kartu">
-        <h2>Tambah Lokasi</h2>
-        <form onsubmit="tambahLokasi(event)">
-          <label>Nama lokasi *</label>
-          <input name="nama" required placeholder="mis. Masjid Kampus">
-          <label>Koordinat * (latitude, longitude)</label>
-          <input name="koordinat" id="inputKoordinat" required placeholder="-3.759000, 102.265500">
-          <div class="baris-aksi">
-            <button type="button" class="btn sek kecil" id="btnLokasiSaya" onclick="pakaiLokasiSaya()">📍 Pakai lokasi saya sekarang</button>
-          </div>
-          <p class="info">Atau buka Google Maps, tekan lama pada titik lokasi, lalu salin angka koordinatnya ke sini.</p>
-          <label>Radius (meter)</label>
-          <input type="number" name="radius" id="inputRadius" min="10" value="100">
-          <button class="btn" type="submit">Simpan Lokasi</button>
-        </form>
-      </div>
-      <div class="kartu">
-        <h2>Daftar Lokasi</h2>
-        <div class="wrap" id="listLokasi"></div>
-      </div>
-    </section>
-
     <!-- PESERTA -->
     <section id="tab-peserta" hidden>
-      <div class="kartu" id="kartuAdminKTA">
-        <h2>🪪 KTA IMM Kader</h2>
-        <form id="formKTAAdmin" hidden onsubmit="kirimKTAAdmin(event)" style="background:#fff8e6;border:1px solid #eadfd4;border-radius:10px;padding:12px;margin-bottom:12px">
-          <b id="namaKTAAdmin"></b>
-          <label>NIA</label><input name="nia" placeholder="sesuai yang tertulis di KTA">
-          <label>Foto / scan KTA (gambar atau PDF)</label><input type="file" name="berkas" accept="image/*,application/pdf">
-          <div class="baris-aksi"><button class="btn" id="btnKTAAdmin" type="submit">Simpan</button>
-            <button class="btn sek" type="button" onclick="$('formKTAAdmin').hidden=true">Batal</button></div>
-        </form>
-        <div class="chips" id="chipsKTA"></div>
-        <div id="listKTA"></div>
-      </div>
-      <div class="kartu" id="kartuAdminSyahadah">
-        <h2>📜 Syahadah DAD Kader</h2>
-        <p class="info" style="margin-top:0">Pendataan kader yang sudah / belum menerima syahadah DAD dari PC. Kader bisa mengisi sendiri di menu <b>KTA &amp; Syahadah</b>.</p>
-        <form id="formSyahadahAdmin" hidden onsubmit="kirimSyahadahAdmin(event)" style="background:#fff8e6;border:1px solid #eadfd4;border-radius:10px;padding:12px;margin-bottom:12px">
-          <b id="namaSyahadahAdmin"></b>
-          <label>Status</label><select name="status"><option value="Belum">Belum menerima</option><option value="Sudah">Sudah menerima</option></select>
-          <div class="grid2">
-            <div><label>Nomor syahadah</label><input name="nomor"></div>
-            <div><label>Predikat</label><input name="predikat" maxlength="10"></div>
-          </div>
-          <label>Foto / scan syahadah (gambar atau PDF, opsional)</label><input type="file" name="berkas" accept="image/*,application/pdf">
-          <div class="baris-aksi"><button class="btn" id="btnSyahadahAdmin" type="submit">Simpan</button>
-            <button class="btn sek" type="button" onclick="$('formSyahadahAdmin').hidden=true">Batal</button></div>
-        </form>
-        <div class="chips" id="chipsSyahadah"></div>
-        <input id="cariSyahadah" placeholder="🔎 Cari nama / tahun DAD…" oninput="renderSyahadahAdmin()">
-        <div id="listSyahadah"></div>
-      </div>
-      <div class="kartu">
-        <h2 id="judulFormPeserta">Tambah Kader</h2>
-        <form id="formPeserta" onsubmit="tambahPeserta(event)">
+      <div class="kartu" id="kartuFormPeserta">
+        <details id="detFormPeserta">
+          <summary style="cursor:pointer;list-style:none"><h2 id="judulFormPeserta" style="display:inline">➕ Tambah Kader</h2></summary>
+          <form id="formPeserta" onsubmit="tambahPeserta(event)" style="margin-top:10px">
+            <h3 class="sub" id="subDataDiri" hidden>👤 Data diri</h3>
           <label>Nama lengkap *</label>
           <input name="nama" required>
           <div class="grid2">
@@ -1330,19 +1292,42 @@
           </div>
           <label>Email * (untuk masuk &amp; pemberitahuan)</label>
           <input type="email" name="email" required>
-          <button class="btn" type="submit" id="btnSimpanPeserta">Tambah Kader</button>
-          <button class="btn sek" type="button" id="btnBatalEdit" onclick="batalEdit()" hidden>Batal</button>
-          <button class="btn hapus" type="button" id="btnResetPin" onclick="resetPinAdmin(this)" hidden>Reset PIN</button>
-          <div id="boxPinAdmin" hidden style="margin-top:14px;border-top:1px solid var(--garis);padding-top:10px">
-            <label>Atur PIN baru untuk kader ini (6 angka)</label>
-            <p class="info" style="font-size:12px;margin:2px 0 6px">PIN tersimpan terenkripsi sehingga PIN lama tidak bisa dilihat siapa pun. Untuk kader yang lupa PIN, buatkan PIN baru di sini lalu beri tahu kadernya; ia bisa menggantinya sendiri setelah masuk.</p>
-            <div style="display:flex;gap:8px"><input id="pinBaruAdmin" inputmode="numeric" maxlength="6" placeholder="mis. 482915" style="flex:1">
-            <button class="btn sek" type="button" onclick="aturPinAdmin(this)">Simpan PIN</button></div>
-          </div>
-        </form>
+            <div id="boxEditLanjut" hidden>
+              <h3 class="sub">🪪 KTA IMM</h3>
+              <p class="info" id="infoKTAEdit" style="font-size:12px;margin:0 0 6px"></p>
+              <label>Foto / scan KTA (gambar atau PDF)</label>
+              <input type="file" name="berkasKTA" accept="image/*,application/pdf">
+              <h3 class="sub">📜 Syahadah DAD</h3>
+              <p class="info" id="infoSyahadahEdit" style="font-size:12px;margin:0 0 6px"></p>
+              <label>Status</label>
+              <select name="syStatus"><option value="Belum">Belum menerima</option><option value="Sudah">Sudah menerima</option></select>
+              <div class="grid2">
+                <div><label>Nomor syahadah</label><input name="syNomor"></div>
+                <div><label>Predikat</label><input name="syPredikat" maxlength="10"></div>
+              </div>
+              <label>Foto / scan syahadah (gambar atau PDF, opsional)</label>
+              <input type="file" name="berkasSy" accept="image/*,application/pdf">
+            </div>
+            <div class="baris-aksi">
+              <button class="btn" type="submit" id="btnSimpanPeserta">Tambah Kader</button>
+              <button class="btn sek" type="button" id="btnBatalEdit" onclick="batalEdit()" hidden>Batal</button>
+            </div>
+            <div id="boxPinAdmin" hidden style="margin-top:14px;border-top:1px solid var(--garis);padding-top:10px">
+              <h3 class="sub" style="margin-top:0">🔑 PIN akun</h3>
+              <p class="info" style="font-size:12px;margin:2px 0 6px">PIN tersimpan terenkripsi sehingga PIN lama tidak bisa dilihat siapa pun. Untuk kader yang lupa PIN, buatkan PIN baru lalu beri tahu kadernya, atau reset agar ia membuat PIN sendiri lewat kode di email.</p>
+              <div style="display:flex;gap:8px"><input id="pinBaruAdmin" inputmode="numeric" maxlength="6" placeholder="PIN baru, mis. 482915" style="flex:1">
+              <button class="btn sek" type="button" onclick="aturPinAdmin(this)">Simpan PIN</button></div>
+              <div class="baris-aksi"><button class="btn hapus kecil" type="button" onclick="resetPinAdmin(this)">Reset PIN</button></div>
+            </div>
+          </form>
+        </details>
       </div>
       <div class="kartu">
         <h2>Daftar Kader</h2>
+        <div class="chips" id="chipsKader"></div>
+        <input id="cariKader" placeholder="🔎 Cari nama / NPM / tahun DAD…" oninput="renderPesertaAdmin()">
+        <p id="ringkasKader" style="margin:8px 0;font-size:13px;color:#666"></p>
+        <div id="barMassalKader"></div>
         <div class="wrap" id="listPeserta"></div>
       </div>
     </section>
@@ -1631,17 +1616,15 @@
   const MENU_PESERTA = {
     beranda: ['Dashboard Peserta', 'Ringkasan kegiatan, pengumuman, dan menu utama.'],
     dokumentasi: ['Dokumentasi Kegiatan', 'Foto dan video kegiatan yang sudah diunggah.'],
-    absensi: ['Absensi Kegiatan', 'Lakukan absensi untuk kegiatan yang masih dibuka.'],
-    kehadiran: ['Riwayat Kehadiran', 'Rekap dan daftar kehadiran Anda.'],
+    absensi: ['Absensi & Kehadiran', 'Absen kegiatan yang dibuka, lalu lihat rekap dan riwayat kehadiran Anda.'],
     perkaderan: ['Riwayat Perkaderan', 'Lihat dan catat jenjang perkaderan.'],
-    kta: ['KTA & Syahadah', 'Berkas KTA IMM dan syahadah DAD Anda.'],
     sertifikat: ['Sertifikat Saya', 'Sertifikat kegiatan dan kepanitiaan Anda.'],
-    profil: ['Foto Profil dan Data Saya', 'Kelola foto profil, nama, nomor HP, dan PIN akun.']
+    profil: ['Profil, KTA & Syahadah', 'Foto profil, data diri, PIN akun, KTA IMM, dan syahadah DAD Anda.']
   };
   function bukaBagianPeserta(bagian, tombol, tanpaScroll) {
     const lama = {
       psHero:'beranda', psDokumentasiKartu:'dokumentasi', psAbsensiKartu:'absensi',
-      psRiwayatKartu:'kehadiran', psJenjangKartu:'perkaderan', psKTAKartu:'kta',
+      psRiwayatKartu:'absensi', psJenjangKartu:'perkaderan', psKTAKartu:'profil', kehadiran:'absensi', kta:'profil',
       kartuSertifLain:'sertifikat', kartuProfil:'profil'
     };
     bagian = lama[bagian] || bagian;
@@ -2430,7 +2413,7 @@
     {
       const kurang = [];
       if (!p.tempatLahir || !p.tanggalLahir) kurang.push(['tempat &amp; tanggal lahir', "bukaBagianPeserta('profil');setTimeout(()=>{$('detUbahProfil').open=true},50)"]);
-      if (!(PS.syahadah && (PS.syahadah.ditandai || PS.syahadah.berkas))) kurang.push(['status syahadah DAD', "bukaBagianPeserta('kta')"]);
+      if (!(PS.syahadah && (PS.syahadah.ditandai || PS.syahadah.berkas))) kurang.push(['status syahadah DAD', "bukaBagianPeserta('profil');setTimeout(()=>$('psSyahadahKartu').scrollIntoView({behavior:'smooth',block:'start'}),80)"]);
       if (kurang.length) $('psPeringatan').innerHTML += `<div class="kartu" style="border-left:4px solid #e0a800;background:#fffaf0">
         <b>📋 Lengkapi data Anda</b><p style="margin:4px 0 8px;font-size:14px">Bidang kader sedang mendata kader. Mohon lengkapi:</p>
         <div class="baris-aksi">${kurang.map(k => `<button type="button" class="btn sek kecil" onclick="${k[1]}">${k[0]}</button>`).join('')}</div></div>`;
@@ -2484,7 +2467,7 @@
       const tertinggi = jj.sort((a, b) => urut.indexOf(b.jenjang) - urut.indexOf(a.jenjang))[0];
       const belum = PS.terbuka.filter(k => !k.saya || k.saya === 'Belum').length;
       $('psStat').innerHTML = `
-        <button type="button" onclick="bukaBagianPeserta('kehadiran')"><span class="cincin" style="--p:${persen}"><i>${persen}%</i></span><span class="label">Kehadiran<br>${rk.Hadir || 0} dari ${total} kegiatan</span></button>
+        <button type="button" onclick="bukaBagianPeserta('absensi');setTimeout(()=>$('psRekap').scrollIntoView({behavior:'smooth',block:'start'}),80)"><span class="cincin" style="--p:${persen}"><i>${persen}%</i></span><span class="label">Kehadiran<br>${rk.Hadir || 0} dari ${total} kegiatan</span></button>
         <button type="button" onclick="bukaBagianPeserta('absensi')"><span class="angka">${belum}</span><span class="label">Absensi menunggu<br>${PS.terbuka.length} kegiatan dibuka</span></button>
         <button type="button" onclick="bukaBagianPeserta('sertifikat')"><span class="angka">${nSertif}</span><span class="label">Sertifikat<br>siap diunduh</span></button>
         <button type="button" onclick="bukaBagianPeserta('perkaderan')"><span class="angka">${esc(tertinggi ? tertinggi.jenjang : 'DAD')}</span><span class="label">Jenjang terakhir<br>${esc(tertinggi ? tertinggi.tahun : (PS.profil.tahunDad || '-'))}</span></button>`;
@@ -2773,8 +2756,7 @@
       <tr><td style="color:#666">NPM</td><td>${esc(p.nim || '-')}</td></tr>
       <tr><td style="color:#666">No. HP</td><td>${esc(p.hp || '-')}</td></tr>
       <tr><td style="color:#666">Tempat, tgl lahir</td><td>${p.tempatLahir || p.tanggalLahir ? esc([p.tempatLahir, p.tanggalLahir ? tglIndo(p.tanggalLahir) : ''].filter(Boolean).join(', ')) : '<span style="color:#b26a00">belum diisi</span>'}</td></tr>
-      <tr><td style="color:#666">Tahun DAD</td><td>${esc(p.tahunDad || '-')}</td></tr>
-      <tr><td style="color:#666">NIA (KTA)</td><td>${esc(p.nia || '-')}</td></tr></table>`;
+      <tr><td style="color:#666">Tahun DAD</td><td>${esc(p.tahunDad || '-')}</td></tr></table>`;
     const f = $('formProfil');
     if (!$('detUbahProfil').open) { f.nama.value = p.nama; f.hp.value = p.hp || ''; f.tempatLahir.value = p.tempatLahir || ''; f.tanggalLahir.value = p.tanggalLahir || ''; }
   }
@@ -2890,8 +2872,6 @@
     renderDAD();
     renderBiodataDAD();
     renderPerkaderanAdmin();
-    renderKTAAdmin();
-    try { renderSyahadahAdmin(); } catch (e) { console.error('renderSyahadahAdmin', e); }
     renderAdministrasi();
     renderLaporan();
   }
@@ -3474,99 +3454,14 @@
     finally { sibuk(b); }
   }
 
-  // ----- Syahadah DAD (admin): pendataan sudah / belum -----
-  let FILTER_SYAHADAH = 'Belum';
-  function renderSyahadahAdmin() {
-    const d = (DATA.peserta || []).slice().sort((a, b) => String(a.tahunDad || '').localeCompare(String(b.tahunDad || '')) || String(a.nama).localeCompare(String(b.nama)));
-    const st = x => (x.syahadah && x.syahadah.status) || 'Belum';
-    const grup = { Semua: () => true, Belum: x => st(x) === 'Belum', Sudah: x => st(x) === 'Sudah' };
-    $('chipsSyahadah').innerHTML = Object.keys(grup).map(g =>
-      `<button class="${FILTER_SYAHADAH === g ? 'aktif' : ''}" onclick="FILTER_SYAHADAH='${g}';renderSyahadahAdmin()">${g === 'Belum' ? 'Belum dapat' : g === 'Sudah' ? 'Sudah dapat' : g} (${d.filter(grup[g]).length})</button>`).join('');
-    const q = ($('cariSyahadah').value || '').trim().toLowerCase();
-    const tampil = d.filter(grup[FILTER_SYAHADAH]).filter(x => !q || (x.nama + ' ' + (x.tahunDad || '') + ' ' + (x.nim || '')).toLowerCase().indexOf(q) >= 0);
-    const sudah = d.filter(grup.Sudah).length;
-    $('listSyahadah').innerHTML = `<p style="margin:8px 0;font-size:13px;color:#666"><b>${sudah}</b> dari ${d.length} kader sudah menerima syahadah · <b style="color:#b3261e">${d.length - sudah}</b> belum.</p>` +
-      (tampil.length ? `<div class="baris-aksi" style="margin-bottom:6px">
-          <label class="cek" style="margin:0"><input type="checkbox" style="width:auto" onchange="document.querySelectorAll('#listSyahadah .cekSy').forEach(c=>c.checked=this.checked)"> Pilih semua</label>
-          <button class="btn sek kecil" onclick="tandaiSyahadah('Sudah',this)">✓ Tandai sudah dapat</button>
-          <button class="btn sek kecil" onclick="tandaiSyahadah('Belum',this)">Tandai belum</button></div>
-        <div class="wrap"><table><tr><th></th><th>Nama · TTL</th><th>DAD</th><th>Syahadah</th><th></th></tr>` + tampil.map(x => {
-          const s = x.syahadah || {};
-          return `<tr><td><input type="checkbox" class="cekSy" value="${esc(x.id)}" style="width:auto"></td>
-          <td>${esc(x.nama)}<br><small style="color:#888">${x.tempatLahir || x.tanggalLahir ? esc([x.tempatLahir, x.tanggalLahir ? tglIndo(x.tanggalLahir) : ''].filter(Boolean).join(', ')) : 'TTL belum diisi'}</small></td>
-          <td>${esc(x.tahunDad || '-')}</td>
-          <td>${st(x) === 'Sudah' ? `<span class="badge b-Hadir">Sudah</span>${s.nomor ? '<br><small>' + esc(s.nomor) + '</small>' : ''}${s.predikat ? '<br><small>Predikat ' + esc(s.predikat) + '</small>' : ''}${s.berkas ? `<br><a href="${esc(s.berkas)}" target="_blank" rel="noopener">📜 Lihat</a>` : ''}` : '<span class="badge b-Alpa">Belum</span>'}</td>
-          <td><button class="btn sek kecil" onclick="ubahSyahadahAdmin('${esc(x.id)}')">Ubah</button></td></tr>`; }).join('') +
-        '</table></div>' : '<p class="kosong">Tidak ada data.</p>');
-  }
   async function tandaiSyahadah(status, b) {
-    const ids = [...document.querySelectorAll('#listSyahadah .cekSy:checked')].map(c => c.value);
+    const ids = [...document.querySelectorAll('#listPeserta .cekKader:checked')].map(c => c.value);
     if (!ids.length) { toast('Centang kader dulu.', true); return; }
     if (!confirm(`Tandai ${ids.length} kader ${status === 'Sudah' ? 'SUDAH' : 'BELUM'} menerima syahadah?`)) return;
     sibuk(b, 'Menyimpan…');
     try { DATA = await panggil('tandaiSyahadahMassal', PW, ids, status); render(); toast(ids.length + ' kader diperbarui ✓'); }
     catch (e) { toast(e.message, true); sibuk(b); }
   }
-  let ID_SYAHADAH_ADMIN = null;
-  function ubahSyahadahAdmin(id) {
-    const x = DATA.peserta.find(p => p.id === id), f = $('formSyahadahAdmin'), s = x.syahadah || {};
-    ID_SYAHADAH_ADMIN = id; f.reset();
-    f.status.value = s.status === 'Sudah' ? 'Sudah' : 'Belum'; f.nomor.value = s.nomor || ''; f.predikat.value = s.predikat || '';
-    $('namaSyahadahAdmin').textContent = 'Syahadah: ' + x.nama;
-    f.hidden = false; f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-  async function kirimSyahadahAdmin(e) {
-    e.preventDefault();
-    const f = e.target, b = $('btnSyahadahAdmin');
-    if (!ID_SYAHADAH_ADMIN) return;
-    sibuk(b, 'Menyimpan…');
-    try {
-      const berkas = await bacaBerkas(f.berkas.files[0]);
-      DATA = await panggil('simpanSyahadahAdmin', PW, ID_SYAHADAH_ADMIN, { status: f.status.value, nomor: f.nomor.value, predikat: f.predikat.value, berkas });
-      f.hidden = true; ID_SYAHADAH_ADMIN = null; render(); toast('Data syahadah disimpan ✓');
-    } catch (err) { toast(err.message, true); }
-    finally { sibuk(b); }
-  }
-
-  // ----- KTA IMM (admin): tabel arsip KTA -----
-  let FILTER_KTA = 'Semua';
-  function renderKTAAdmin() {
-    const d = (DATA.peserta || []).slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama)));
-    const ada = d.filter(x => x.kta).length;
-    $('jumlahKTA').textContent = '';
-    const grup = { Semua: () => true, 'Sudah ada': x => !!x.kta, 'Belum': x => !x.kta };
-    $('chipsKTA').innerHTML = Object.keys(grup).map(g =>
-      `<button class="${FILTER_KTA === g ? 'aktif' : ''}" onclick="FILTER_KTA='${g}';renderKTAAdmin()">${g} (${d.filter(grup[g]).length})</button>`).join('');
-    const tampil = d.filter(grup[FILTER_KTA]);
-    $('listKTA').innerHTML = `<p style="margin:0 0 8px;font-size:13px;color:#666">${ada} dari ${d.length} kader sudah mengunggah KTA.</p>` +
-      (tampil.length ? '<div class="wrap"><table><tr><th>Nama</th><th>NIA</th><th>KTA</th><th></th></tr>' + tampil.map(x => `
-      <tr><td>${esc(x.nama)}<br><small style="color:#888">${esc(x.nim)}</small></td>
-        <td>${esc(x.nia || '-')}</td>
-        <td>${x.kta ? `<a href="${esc(x.kta)}" target="_blank" rel="noopener">🪪 Lihat</a>` : '<span style="color:#999">Belum</span>'}</td>
-        <td><button class="btn sek kecil" onclick="unggahKTAAdmin('${esc(x.id)}')">${x.kta ? 'Ganti' : '+ Tambah'}</button></td></tr>`).join('') +
-      '</table></div>' : '<p class="kosong">Tidak ada data.</p>');
-  }
-  let ID_KTA_ADMIN = null;
-  function unggahKTAAdmin(id) {
-    const x = DATA.peserta.find(p => p.id === id), f = $('formKTAAdmin');
-    ID_KTA_ADMIN = id; f.reset(); f.nia.value = x.nia || '';
-    $('namaKTAAdmin').textContent = 'KTA: ' + x.nama;
-    f.hidden = false; f.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-  async function kirimKTAAdmin(e) {
-    e.preventDefault();
-    const f = e.target, b = $('btnKTAAdmin');
-    if (!ID_KTA_ADMIN) return;
-    if (!f.berkas.files[0] && !f.nia.value.trim()) { toast('Isi NIA atau pilih berkas KTA.', true); return; }
-    sibuk(b, 'Mengunggah…');
-    try {
-      const berkas = await bacaBerkas(f.berkas.files[0]);
-      DATA = await panggil('simpanKTAAdmin', PW, ID_KTA_ADMIN, f.nia.value, berkas);
-      f.hidden = true; ID_KTA_ADMIN = null; render(); toast('KTA disimpan ✓');
-    } catch (err) { toast(err.message, true); }
-    finally { sibuk(b); }
-  }
-
 
   async function ubahTahap(id, tahap, b) {
     const x = DATA.dad.find(d => d.id === id);
@@ -3770,7 +3665,7 @@
     $('pilihLokasiKeg').innerHTML = DATA.lokasi.length
       ? '<option value="">— Pilih lokasi —</option>' + DATA.lokasi.map(l =>
           `<option value="${esc(l.id)}">${esc(l.nama)} (radius ${l.radius} m)</option>`).join('')
-      : '<option value="">Belum ada lokasi — tambahkan di tab Lokasi</option>';
+      : '<option value="">Belum ada lokasi — tambahkan di bagian Lokasi Absensi (di bawah)</option>';
     if (lokDipilih) $('pilihLokasiKeg').value = lokDipilih;
 
     $('listKegiatan').innerHTML = DATA.kegiatan.length
@@ -4495,28 +4390,45 @@
     const f = e.target, b = $('btnSimpanPeserta');
     const obj = { nama: f.nama.value, nim: f.nim.value, email: f.email.value, hp: f.hp.value, tahunDad: f.tahunDad.value, nia: f.nia.value,
       tempatLahir: f.tempatLahir.value, tanggalLahir: f.tanggalLahir.value };
-    const sedangEdit = EDIT_ID;
+    const id = EDIT_ID;
     sibuk(b, 'Menyimpan…');
     try {
-      DATA = sedangEdit ? await panggil('editPeserta', PW, sedangEdit, obj)
-                        : await panggil('tambahPeserta', PW, obj);
-      sibuk(b); batalEdit(); render();
-      toast(sedangEdit ? 'Data kader diperbarui.' : 'Kader ditambahkan.');
-    } catch (err) { toast(err.message, true); sibuk(b); }
+      if (!id) {
+        DATA = await panggil('tambahPeserta', PW, obj);
+        sibuk(b); batalEdit(); render(); toast('Kader ditambahkan.'); return;
+      }
+      const lama = DATA.peserta.find(x => x.id === id) || {}, sy = lama.syahadah || {};
+      DATA = await panggil('editPeserta', PW, id, obj);
+      // KTA: hanya bila berkas baru dipilih (NIA sudah ikut tersimpan di atas)
+      if (f.berkasKTA.files[0]) DATA = await panggil('simpanKTAAdmin', PW, id, f.nia.value, await bacaBerkas(f.berkasKTA.files[0]));
+      // Syahadah: hanya bila ada yang berubah
+      const d = { status: f.syStatus.value, nomor: f.syNomor.value.trim(), predikat: f.syPredikat.value.trim() };
+      const berkasSy = f.berkasSy.files[0];
+      if (berkasSy || d.status !== (sy.status === 'Sudah' ? 'Sudah' : 'Belum') || d.nomor !== (sy.nomor || '') || d.predikat.toUpperCase() !== String(sy.predikat || '').toUpperCase()) {
+        if (berkasSy) d.berkas = await bacaBerkas(berkasSy);
+        DATA = await panggil('simpanSyahadahAdmin', PW, id, d);
+      }
+      sibuk(b); batalEdit(); render(); toast('Data kader diperbarui.');
+    } catch (err) { toast(err.message, true); sibuk(b); render(); }
   }
 
   function mulaiEdit(id) {
     const p = DATA.peserta.find(x => x.id === id);
     if (!p) return;
-    const f = $('formPeserta');
+    const f = $('formPeserta'), s = p.syahadah || {};
+    f.reset();
     f.nama.value = p.nama; f.nim.value = p.nim; f.email.value = p.email; f.hp.value = p.hp; f.tahunDad.value = p.tahunDad || ''; f.nia.value = p.nia || '';
     f.tempatLahir.value = p.tempatLahir || ''; f.tanggalLahir.value = p.tanggalLahir || '';
+    f.syStatus.value = s.status === 'Sudah' ? 'Sudah' : 'Belum'; f.syNomor.value = s.nomor || ''; f.syPredikat.value = s.predikat || '';
+    $('infoKTAEdit').innerHTML = p.kta ? `KTA sudah ada: <a href="${esc(p.kta)}" target="_blank" rel="noopener">🪪 Lihat</a>. Pilih berkas baru hanya bila ingin mengganti.` : 'Belum ada scan KTA.';
+    $('infoSyahadahEdit').innerHTML = s.berkas ? `Scan syahadah sudah ada: <a href="${esc(s.berkas)}" target="_blank" rel="noopener">📜 Lihat</a>.` : 'Belum ada scan syahadah.';
     EDIT_ID = id;
-    $('judulFormPeserta').textContent = 'Edit Data Kader';
+    $('judulFormPeserta').textContent = '✏️ Edit Data Kader: ' + p.nama;
     $('btnSimpanPeserta').textContent = 'Simpan Perubahan';
-    $('btnBatalEdit').hidden = false; $('btnResetPin').hidden = false; $('boxPinAdmin').hidden = false; $('pinBaruAdmin').value = '';
-    f.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    f.nama.focus();
+    $('subDataDiri').hidden = false; $('boxEditLanjut').hidden = false;
+    $('btnBatalEdit').hidden = false; $('boxPinAdmin').hidden = false; $('pinBaruAdmin').value = '';
+    $('detFormPeserta').open = true;
+    $('kartuFormPeserta').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function kirimPeringatan(id, b) {
@@ -4588,11 +4500,14 @@
   }
 
   function batalEdit() {
+    const sedangEdit = !!EDIT_ID;
     EDIT_ID = null;
     $('formPeserta').reset();
-    $('judulFormPeserta').textContent = 'Tambah Kader';
+    $('judulFormPeserta').textContent = '➕ Tambah Kader';
     $('btnSimpanPeserta').textContent = 'Tambah Kader';
-    $('btnBatalEdit').hidden = true; $('btnResetPin').hidden = true; $('boxPinAdmin').hidden = true;
+    $('subDataDiri').hidden = true; $('boxEditLanjut').hidden = true;
+    $('btnBatalEdit').hidden = true; $('boxPinAdmin').hidden = true;
+    if (sedangEdit) $('detFormPeserta').open = false;
   }
 
   async function hapusPeserta(id) {
@@ -4602,21 +4517,46 @@
     catch (e) { toast(e.message, true); }
   }
 
+  // Daftar Kader: satu tabel untuk data diri, KTA, syahadah, dan kehadiran
+  let FILTER_KADER = 'Semua';
   function renderPesertaAdmin() {
     const batas = DATA.config.batas;
-    $('listPeserta').innerHTML = DATA.rekapPeserta.length
-      ? `<table><tr><th>Nama</th><th>Email</th><th class="c">Tidak Hadir</th><th></th></tr>` +
-        DATA.rekapPeserta.map(p => `<tr>
-          <td><b>${esc(p.nama)}</b><br><small>${esc(p.nim)}${p.tahunDad ? ' · DAD ' + esc(p.tahunDad) : ''}${p.hp ? ' · ' + esc(p.hp) : ''}</small></td>
-          <td>${esc(p.email)}${jenjangTertinggi(p.id, p.tahunDad) ? `<br><span class="badge b-Izin">${jenjangTertinggi(p.id, p.tahunDad)}</span>` : ''}</td>
-          <td class="c"><span class="badge ${p.tidakHadir >= batas ? 'merah' : ''}">${p.tidakHadir}x</span></td>
+    const rekap = {}; (DATA.rekapPeserta || []).forEach(r => { rekap[r.id] = r; });
+    const d = (DATA.peserta || []).slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama)));
+    const sudahSy = x => (x.syahadah && x.syahadah.status) === 'Sudah';
+    const grup = { 'Semua': () => true, 'Belum KTA': x => !x.kta, 'Belum syahadah': x => !sudahSy(x) };
+    $('jumlahKTA').textContent = '';
+    $('chipsKader').innerHTML = Object.keys(grup).map(g =>
+      `<button class="${FILTER_KADER === g ? 'aktif' : ''}" data-filter-kader="${g}">${g} (${d.filter(grup[g]).length})</button>`).join('');
+    $('chipsKader').querySelectorAll('[data-filter-kader]').forEach(b => { b.onclick = () => { FILTER_KADER = b.dataset.filterKader; renderPesertaAdmin(); }; });
+    const nKTA = d.filter(x => x.kta).length, nSy = d.filter(sudahSy).length;
+    $('ringkasKader').innerHTML = d.length ? `<b>${d.length}</b> kader · KTA <b>${nKTA}</b>/${d.length} · syahadah <b>${nSy}</b>/${d.length}` : '';
+    const q = ($('cariKader').value || '').trim().toLowerCase();
+    const tampil = d.filter(grup[FILTER_KADER] || grup.Semua).filter(x => !q || [x.nama, x.nim, x.nia, x.tahunDad].join(' ').toLowerCase().indexOf(q) >= 0);
+    $('barMassalKader').innerHTML = tampil.length ? `<div class="baris-aksi" style="margin:0 0 6px">
+        <label class="cek" style="margin:0"><input type="checkbox" style="width:auto" onchange="document.querySelectorAll('#listPeserta .cekKader').forEach(c=>c.checked=this.checked)"> Pilih semua</label>
+        <button class="btn sek kecil" onclick="tandaiSyahadah('Sudah',this)">📜 Tandai sudah dapat syahadah</button>
+        <button class="btn sek kecil" onclick="tandaiSyahadah('Belum',this)">Tandai belum</button></div>` : '';
+    $('listPeserta').innerHTML = tampil.length
+      ? `<table><tr><th></th><th>Kader</th><th class="c">Tidak Hadir</th><th></th></tr>` +
+        tampil.map(p => {
+          const r = rekap[p.id] || {}, s = p.syahadah || {}, th = r.tidakHadir || 0;
+          const jenjang = jenjangTertinggi(p.id, p.tahunDad);
+          return `<tr>
+          <td><input type="checkbox" class="cekKader" value="${esc(p.id)}" style="width:auto"></td>
+          <td><b>${esc(p.nama)}</b><br><small>${[p.nim, p.tahunDad ? 'DAD ' + p.tahunDad : '', p.hp].filter(Boolean).map(esc).join(' · ')}</small><br>
+            <small>${esc(p.email)}</small><br>
+            ${p.kta ? `<a class="badge b-Hadir" href="${esc(p.kta)}" target="_blank" rel="noopener" style="text-decoration:none">🪪 KTA${p.nia ? ' · ' + esc(p.nia) : ''}</a>` : '<span class="badge b-Alpa">🪪 Belum KTA</span>'}
+            ${sudahSy(p) ? (s.berkas ? `<a class="badge b-Hadir" href="${esc(s.berkas)}" target="_blank" rel="noopener" style="text-decoration:none">📜 Syahadah</a>` : '<span class="badge b-Hadir">📜 Syahadah</span>') : '<span class="badge b-Alpa">📜 Belum syahadah</span>'}
+            ${jenjang ? `<span class="badge b-Izin">${jenjang}</span>` : ''}</td>
+          <td class="c"><span class="badge ${th >= batas ? 'merah' : ''}">${th}x</span></td>
           <td class="c"><div class="aksi-kader">
-            <button class="btn sek kecil" onclick="mulaiEdit('${esc(p.id)}')">Edit</button>
+            <button class="btn sek kecil" onclick="mulaiEdit('${esc(p.id)}')">✏️ Edit</button>
             <button class="btn oranye kecil" onclick="kirimPeringatan('${esc(p.id)}', this)">⚠ Email</button>
             <button class="btn wa kecil" onclick="peringatanWA('${esc(p.id)}', this)">💬 WhatsApp</button>
             <button class="btn hapus kecil" onclick="hapusPeserta('${esc(p.id)}')">Hapus</button></div></td>
-        </tr>`).join('') + '</table>'
-      : '<p class="kosong">Belum ada kader.</p>';
+        </tr>`; }).join('') + '</table>'
+      : `<p class="kosong">${d.length ? 'Tidak ada kader pada pilihan ini.' : 'Belum ada kader.'}</p>`;
   }
 
   // ----- Laporan -----
@@ -4712,11 +4652,6 @@
             <div class="logo"></div>${teks('Anggun dalam Moral, Unggul dalam Intelektual')}
             <button class="btn-foto" onclick="pilihFotoProfil()">📷 Tambah foto profil</button>
           </div></div>`;
-
-    // ----- video di kartu tersendiri (di bawah absensi) -----
-    $('psGaleriKartu').hidden = !video.length;
-    $('psGaleri').innerHTML = video.map(m => `<div class="video"><iframe src="${srcVideo(m)}" allow="autoplay; encrypted-media; fullscreen" allowfullscreen loading="lazy"></iframe></div>
-      ${labelMedia(m) ? `<div class="video-cap">🎬 ${esc(labelMedia(m))}</div>` : ''}`).join('');
 
     SLIDE.i = 0; SLIDE.n = foto.length;
     if (SLIDE.n > 1) SLIDE.timer = setInterval(() => geserSlide(1), 5000);

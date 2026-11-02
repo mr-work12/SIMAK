@@ -3715,7 +3715,7 @@ function simpanSyahadah_(baris, p, d) {
   d = d || {};
   if (d.status !== undefined) sh.getRange(baris, 15).setValue(d.status === 'Sudah' ? 'Sudah' : 'Belum');
   if (d.nomor !== undefined) sh.getRange(baris, 16).setValue("'" + String(d.nomor || '').trim());
-  if (d.predikat !== undefined) sh.getRange(baris, 17).setValue(String(d.predikat || '').trim().toUpperCase());
+  if (d.predikat !== undefined) sh.getRange(baris, 17).setValue(amanSel_(String(d.predikat || '').trim().toUpperCase()));
   if (d.berkas && d.berkas.data) {
     const mime = d.berkas.mime === 'application/pdf' ? 'application/pdf' : (d.berkas.mime || 'image/jpeg');
     if (!/^image\/|^application\/pdf$/.test(mime)) throw new Error('Syahadah harus berupa foto atau PDF.');
