@@ -115,7 +115,7 @@ const SHEET = {
   SURAT:    { nama: 'Agenda Surat', header: ['ID', 'Jenis', 'Nomor Surat', 'Tanggal Surat', 'Perihal', 'Dari / Kepada', 'Keterangan', 'Berkas', 'Dicatat', 'ID Email'] },
   NOTULEN:  { nama: 'Notulen', header: ['ID', 'Tanggal', 'Rapat / Agenda', 'Tempat', 'Pimpinan Rapat', 'Notulis', 'Peserta', 'Pembahasan', 'Keputusan', 'Dicatat'] },
   INFO:     { nama: 'Pengumuman', header: ['ID', 'Judul', 'Isi', 'Dibuat'] },
-  SESI_DAD: { nama: 'Sesi DAD', header: ['ID', 'Tahun', 'Urutan', 'Nama Sesi', 'Hari Ke', 'Status'] },
+  SESI_DAD: { nama: 'Sesi DAD', header: ['ID', 'Tahun', 'Urutan', 'Nama Sesi', 'Hari Ke', 'Status', 'Jenis'] },
   ABSEN_DAD: { nama: 'Absensi DAD', header: ['ID Sesi', 'Tahun', 'ID Pendaftar', 'Nama', 'Status', 'Waktu', 'Sumber', 'Jarak (m)', 'Koordinat'] },
   LOGWA:    { nama: 'Log WhatsApp', header: ['Waktu', 'Jenis', 'Tujuan', 'Jumlah', 'Status', 'Keterangan'] },
   LOG:      { nama: 'Log Email', header: ['Waktu', 'ID Kader', 'Nama', 'Email', 'Jumlah Tidak Hadir', 'Peringatan Ke-', 'Hasil'] }
@@ -4186,9 +4186,10 @@ function cekStatusDAD(kunci) {
   }
   let sesiInfo = null, sertifDAD = '';
   try {
-    const th = Number(d.tahunDaftar), sesi = sesiDAD_(th).map(r => r[0]);
-    const hadir = rows_('ABSEN_DAD').filter(r => r[2] === d.id && r[4] === 'Hadir' && sesi.indexOf(r[0]) >= 0).length;
-    if (sesi.length && hadir) sesiInfo = { hadir: hadir, total: sesi.length };
+    const th = Number(d.tahunDaftar), sesi = sesiDAD_(th, 'Sesi').map(r => r[0]), sholat = sesiDAD_(th, 'Sholat').map(r => r[0]);
+    const absenSaya = rows_('ABSEN_DAD').filter(r => r[2] === d.id && r[4] === 'Hadir');
+    const hadir = absenSaya.filter(r => sesi.indexOf(r[0]) >= 0).length, hadirSholat = absenSaya.filter(r => sholat.indexOf(r[0]) >= 0).length;
+    if (sesi.length && (hadir || hadirSholat)) sesiInfo = { hadir: hadir, total: sesi.length, sholat: hadirSholat, totalSholat: sholat.length };
     const s = rows_('SERTIFIKAT').find(r => r[2] === d.id);
     if (s) sertifDAD = String(s[6] || '');
   } catch (e) {}
@@ -4203,21 +4204,38 @@ function cekStatusDAD(kunci) {
 // Sertifikat peserta DAD: hadir di SEMUA sesi (100%); tidak dipakai untuk kelulusan.
 const SESI_DAD_BAWAAN = [['Kedatangan', 1], ['Pembukaan', 1]]
   .concat([1, 2, 3, 4, 5, 6, 7, 8].map(n => ['Materi ' + n, ''])).concat([['Penutupan', '']]);
+// Sholat berjamaah DAD 4 hari 3 malam (rekap terpisah, tidak untuk syarat sertifikat). Bisa ditambah / dihapus admin.
+const SHOLAT_DAD_BAWAAN = [
+  [1, ['Dzuhur', 'Ashar', 'Maghrib', 'Isya']],
+  [2, ['Tahajud', 'Subuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya']],
+  [3, ['Tahajud', 'Subuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya']],
+  [4, ['Tahajud', 'Subuh', 'Dzuhur', 'Ashar']]];
 const STATUS_SESI_DAD = ['Hadir', 'Izin', 'Sakit'];
+function sholatDAD_(r) { return String(r[6] || '') === 'Sholat'; }
 function tahunDAD_() { return Number(Utilities.formatDate(new Date(), CONFIG.ZONA_WAKTU, 'yyyy')); }
 function kegiatanDAD_(tahun) {
   const id = PropertiesService.getScriptProperties().getProperty('DAD_KEGIATAN_' + tahun) || '';
   return id ? (rows_('KEGIATAN').find(r => r[0] === id) || null) : null;
 }
-function sesiDAD_(tahun) {
-  return rows_('SESI_DAD').filter(r => Number(r[1]) === tahun).sort((a, b) => Number(a[2]) - Number(b[2]));
+/** Semua baris sesi tahun ini (sesi kegiatan + sholat), atau satu jenis saja: 'Sesi' / 'Sholat'. */
+function sesiDAD_(tahun, jenis) {
+  return rows_('SESI_DAD').filter(r => Number(r[1]) === tahun && (!jenis || (jenis === 'Sholat') === sholatDAD_(r)))
+    .sort((a, b) => Number(a[2]) - Number(b[2]));
 }
 function pastikanSesiDAD_(tahun) {
-  if (sesiDAD_(tahun).length) return;
+  const props = PropertiesService.getScriptProperties(), kunciSholat = 'DAD_SHOLAT_DIBUAT_' + tahun;
+  if (sesiDAD_(tahun, 'Sesi').length && props.getProperty(kunciSholat)) return;
   kunci_(() => {
-    if (sesiDAD_(tahun).length) return;
     const sh = sh_('SESI_DAD');
-    SESI_DAD_BAWAAN.forEach((x, i) => sh.appendRow([idBaru_('SESI_DAD', 'SD'), tahun, i + 1, x[0], x[1], '']));
+    if (!sesiDAD_(tahun, 'Sesi').length)
+      SESI_DAD_BAWAAN.forEach((x, i) => sh.appendRow([idBaru_('SESI_DAD', 'SD'), tahun, i + 1, x[0], x[1], '', 'Sesi']));
+    if (!props.getProperty(kunciSholat)) {                      // dibuat sekali; bila dihapus admin, tidak dibuat ulang
+      if (!sesiDAD_(tahun, 'Sholat').length) {
+        let n = 0;
+        SHOLAT_DAD_BAWAAN.forEach(h => h[1].forEach(nm => sh.appendRow([idBaru_('SESI_DAD', 'SD'), tahun, ++n, nm, h[0], '', 'Sholat'])));
+      }
+      props.setProperty(kunciSholat, '1');
+    }
   });
 }
 /** Peserta yang diabsen: pendaftar tahun ini berstatus "Mengikuti DAD", plus yang sudah punya catatan absen. */
@@ -4229,18 +4247,19 @@ function pesertaSesiDAD_(tahun, absen) {
 function dataAbsenDAD_() {
   const tahun = tahunDAD_();
   pastikanSesiDAD_(tahun);
-  const sesi = sesiDAD_(tahun), keg = kegiatanDAD_(tahun);
+  const sesi = sesiDAD_(tahun, 'Sesi'), sholat = sesiDAD_(tahun, 'Sholat'), keg = kegiatanDAD_(tahun);
   const absen = rows_('ABSEN_DAD').filter(r => Number(r[1]) === tahun);
   const peta = {}, mandiri = {};
   absen.forEach(r => { (peta[r[2]] = peta[r[2]] || {})[r[0]] = r[4]; if (r[6] === 'Peserta') (mandiri[r[2]] = mandiri[r[2]] || {})[r[0]] = 1; });
   const peserta = pesertaSesiDAD_(tahun, absen).map(r => {
     const h = peta[r[0]] || {}, hadir = sesi.filter(x => h[x[0]] === 'Hadir').length;
     return { id: r[0], nama: String(r[1]), npm: String(r[2] || ''), prodi: String(r[3] || ''), status: normalTahap_(r[10]),
-      absen: h, mandiri: mandiri[r[0]] || {}, hadir: hadir, lengkap: sesi.length > 0 && hadir === sesi.length };
+      absen: h, mandiri: mandiri[r[0]] || {}, hadir: hadir, lengkap: sesi.length > 0 && hadir === sesi.length,
+      hadirSholat: sholat.filter(x => h[x[0]] === 'Hadir').length };
   }).sort((a, b) => a.nama.localeCompare(b.nama));
-  return { tahun: tahun, idKeg: keg ? keg[0] : '', namaKeg: keg ? keg[1] : '',
-    sesi: sesi.map(x => ({ id: x[0], nama: String(x[3]), hari: String(x[4] || ''), buka: x[5] === 'Buka',
-      hadir: absen.filter(a => a[0] === x[0] && a[4] === 'Hadir').length })), peserta: peserta };
+  const ke = x => ({ id: x[0], nama: String(x[3]), hari: String(x[4] || ''), buka: x[5] === 'Buka', jenis: sholatDAD_(x) ? 'Sholat' : 'Sesi',
+    hadir: absen.filter(a => a[0] === x[0] && a[4] === 'Hadir').length });
+  return { tahun: tahun, idKeg: keg ? keg[0] : '', namaKeg: keg ? keg[1] : '', sesi: sesi.map(ke), sholat: sholat.map(ke), peserta: peserta };
 }
 /** Peserta DAD yang berhak sertifikat (hadir semua sesi), dikelompokkan per kegiatan DAD yang ditautkan. */
 function dadLayakSertifikat_() {
@@ -4248,7 +4267,7 @@ function dadLayakSertifikat_() {
   const semuaSesi = rows_('SESI_DAD'), semuaAbsen = rows_('ABSEN_DAD'), dad = rows_('DAD');
   Object.keys(props).filter(k => /^DAD_KEGIATAN_\d{4}$/.test(k)).forEach(k => {
     const tahun = Number(k.slice(-4)), idKeg = props[k];
-    const sesi = semuaSesi.filter(r => Number(r[1]) === tahun).map(r => r[0]);
+    const sesi = semuaSesi.filter(r => Number(r[1]) === tahun && !sholatDAD_(r)).map(r => r[0]);   // sholat tidak untuk syarat sertifikat
     if (!sesi.length) return;
     const hadir = {};
     semuaAbsen.forEach(r => { if (Number(r[1]) === tahun && r[4] === 'Hadir' && sesi.indexOf(r[0]) >= 0) (hadir[r[2]] = hadir[r[2]] || {})[r[0]] = 1; });
@@ -4272,7 +4291,7 @@ function aturKegiatanDAD(pw, idKeg) {
   if (idKeg) props.setProperty(k, idKeg); else props.deleteProperty(k);
   return getData(pw);
 }
-function tambahSesiDAD(pw, nama, hari) {
+function tambahSesiDAD(pw, nama, hari, jenis) {
   cek_(pw);
   nama = rapiTeks_(nama).trim().slice(0, 80);
   if (!nama) throw new Error('Nama sesi wajib diisi.');
@@ -4280,8 +4299,9 @@ function tambahSesiDAD(pw, nama, hari) {
   const tahun = tahunDAD_();
   pastikanSesiDAD_(tahun);
   kunci_(() => {
-    const urut = sesiDAD_(tahun).reduce((a, r) => Math.max(a, Number(r[2]) || 0), 0) + 1;
-    sh_('SESI_DAD').appendRow(amanBaris_([idBaru_('SESI_DAD', 'SD'), tahun, urut, nama, h, '']));
+    const j = jenis === 'Sholat' ? 'Sholat' : 'Sesi';
+    const urut = sesiDAD_(tahun, j).reduce((a, r) => Math.max(a, Number(r[2]) || 0), 0) + 1;
+    sh_('SESI_DAD').appendRow(amanBaris_([idBaru_('SESI_DAD', 'SD'), tahun, urut, nama, h, '', j]));
   });
   return getData(pw);
 }
@@ -4296,8 +4316,9 @@ function ubahSesiDAD(pw, id, nama, hari) {
 function geserSesiDAD(pw, id, arah) {
   cek_(pw);
   kunci_(() => {
-    const c = cariSesiDAD_(id), tahun = Number(c.v[c.i][1]);
-    const urut = c.v.map((r, n) => ({ r: r, n: n })).filter(x => x.n > 0 && Number(x.r[1]) === tahun).sort((a, b) => Number(a.r[2]) - Number(b.r[2]));
+    const c = cariSesiDAD_(id), tahun = Number(c.v[c.i][1]), sholat = sholatDAD_(c.v[c.i]);
+    const urut = c.v.map((r, n) => ({ r: r, n: n })).filter(x => x.n > 0 && Number(x.r[1]) === tahun && sholatDAD_(x.r) === sholat)
+      .sort((a, b) => Number(a.r[2]) - Number(b.r[2]));
     const j = urut.findIndex(x => x.n === c.i), k = j + (arah < 0 ? -1 : 1);
     if (j < 0 || k < 0 || k >= urut.length) return;
     // tulis ulang urutan 1..n setelah ditukar
@@ -4357,7 +4378,7 @@ function simpanAbsenSesiDAD(pw, idSesi, ubah) {
 function infoAbsenDAD() {
   const tahun = tahunDAD_(), x = sesiDAD_(tahun).find(r => r[5] === 'Buka'), keg = kegiatanDAD_(tahun);
   const lok = keg ? petaLokasi_()[keg[8]] : null;
-  return { tahun: tahun, sesi: x ? { nama: String(x[3]), hari: String(x[4] || '') } : null, kegiatan: keg ? String(keg[1]) : 'Darul Arqam Dasar (DAD)',
+  return { tahun: tahun, sesi: x ? { nama: (sholatDAD_(x) ? 'Sholat ' : '') + String(x[3]), hari: String(x[4] || ''), sholat: sholatDAD_(x) } : null, kegiatan: keg ? String(keg[1]) : 'Darul Arqam Dasar (DAD)',
     lokasi: lok ? { nama: lok.nama, radius: lok.radius } : null, penyelenggara: CONFIG.PENYELENGGARA };
 }
 function absenSesiDAD(email, hp, posisi) {
@@ -4381,10 +4402,11 @@ function absenSesiDAD(email, hp, posisi) {
     if (jarak > lok.radius) throw new Error('Anda berada ' + jarak + ' m dari ' + lok.nama + '. Absen hanya bisa dalam radius ' + lok.radius + ' m.');
     const sh = sh_('ABSEN_DAD'), v = sh.getDataRange().getValues();
     const i = v.findIndex((a, n) => n > 0 && a[0] === x[0] && a[2] === r[0]);
-    if (i > 0 && v[i][4] === 'Hadir') { hasil = { sudah: true, sesi: String(x[3]), nama: String(r[1]) }; return; }
+    const namaSesi = (sholatDAD_(x) ? 'Sholat ' : '') + String(x[3]);
+    if (i > 0 && v[i][4] === 'Hadir') { hasil = { sudah: true, sesi: namaSesi, nama: String(r[1]) }; return; }
     const baris = amanBaris_([x[0], tahun, r[0], r[1], 'Hadir', new Date(), 'Peserta', jarak, posisi.lat.toFixed(6) + ', ' + posisi.lng.toFixed(6)]);
     if (i > 0) sh.getRange(i + 1, 1, 1, baris.length).setValues([baris]); else sh.appendRow(baris);
-    hasil = { sesi: String(x[3]), nama: String(r[1]), jarak: jarak };
+    hasil = { sesi: namaSesi, nama: String(r[1]), jarak: jarak, sholat: sholatDAD_(x) };
   });
   return hasil;
 }

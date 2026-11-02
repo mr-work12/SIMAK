@@ -657,7 +657,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 09.00</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 09.20</p>
     </div>
   </section>
   <div class="tengah">
@@ -667,7 +667,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 09.00</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 09.20</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1493,7 +1493,7 @@
       </div>
       <div class="kartu" id="kartuAbsenDAD">
         <h2>🗓️ Absensi Sesi DAD <span id="tahunAbsenDAD"></span></h2>
-        <p class="info" style="margin-top:0">Peserta = pendaftar berstatus <b>Mengikuti DAD</b>. Kehadiran dicatat per sesi (kedatangan, materi, dll.): dicentang panitia di sini, atau peserta absen sendiri lewat QR saat sesi <b>dibuka</b>. <b>Sertifikat</b> peserta DAD hanya untuk yang hadir di <b>semua sesi</b>; tidak dipakai untuk kelulusan.</p>
+        <p class="info" style="margin-top:0">Peserta = pendaftar berstatus <b>Mengikuti DAD</b>. Kehadiran dicatat per sesi (kedatangan, materi, dll.) dan per <b>sholat berjamaah</b>: dicentang panitia di sini, atau peserta absen sendiri lewat QR saat sesi <b>dibuka</b>. <b>Sertifikat</b> peserta DAD hanya untuk yang hadir di <b>semua sesi</b>; tidak dipakai untuk kelulusan.</p>
         <div id="isiAbsenDAD"><p class="kosong">Memuat…</p></div>
         <div id="boxQRAbsenDAD" hidden style="text-align:center;margin-top:10px">
           <canvas id="kanvasQRAbsenDAD" style="max-width:100%;border:1px solid #eadfd4;border-radius:10px"></canvas>
@@ -2059,7 +2059,7 @@
         ${r.nama ? `<b>${esc(r.nama)}</b>` : ''}${htmlTahapan(r.status)}
         <div class="meta" style="margin-top:6px">${keterangan}${r.tanggal ? `<br><small>Daftar: ${esc(r.tanggal)}${r.diperbarui ? ' · Diperbarui: ' + esc(r.diperbarui) : ''}</small>` : ''}</div>
         ${r.status === 'Sudah jadi kader' ? `<button class="btn penuh" onclick="$('pEmail').value='${r.lewatHp ? '' : esc(email)}';tampilDaftar(false)">Masuk sebagai Kader</button>` : ''}
-        ${r.sesiDAD ? `<p class="info" style="font-size:13px;margin:8px 0 0">🗓️ Kehadiran sesi DAD: <b>${r.sesiDAD.hadir} dari ${r.sesiDAD.total} sesi</b>${r.sesiDAD.hadir >= r.sesiDAD.total ? ' ✅' : ''}</p>` : ''}
+        ${r.sesiDAD ? `<p class="info" style="font-size:13px;margin:8px 0 0">🗓️ Kehadiran sesi DAD: <b>${r.sesiDAD.hadir} dari ${r.sesiDAD.total} sesi</b>${r.sesiDAD.hadir >= r.sesiDAD.total ? ' ✅' : ''}${r.sesiDAD.totalSholat ? `<br>🕌 Sholat berjamaah: <b>${r.sesiDAD.sholat} dari ${r.sesiDAD.totalSholat}</b>` : ''}</p>` : ''}
         ${r.sertifikat ? `<a class="btn penuh" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="${esc(r.sertifikat)}" target="_blank" rel="noopener">📄 Unduh Sertifikat DAD</a>` : ''}
         ${r.grupWA ? `<a class="btn-wa" href="${esc(r.grupWA)}" target="_blank" rel="noopener">Gabung Grup WhatsApp DAD</a>` : ''}
         ${r.status !== 'Sudah jadi kader' || r.tanggal ? `<div style="border-top:1px solid var(--garis);margin-top:12px;padding-top:10px">
@@ -3706,8 +3706,8 @@
     if (!a || !$('isiAbsenDAD')) return;
     $('tahunAbsenDAD').textContent = a.tahun || '';
     if (a.galat) { $('isiAbsenDAD').innerHTML = `<p class="peringatan">${esc(a.galat)}</p>`; return; }
-    const sesi = a.sesi || [], ps = a.peserta || [], buka = sesi.find(x => x.buka);
-    if (!sesi.some(x => x.id === SESI_DAD_PILIH)) SESI_DAD_PILIH = (buka || sesi[0] || {}).id || '';
+    const sesi = a.sesi || [], sholat = a.sholat || [], semua = sesi.concat(sholat), ps = a.peserta || [], buka = semua.find(x => x.buka);
+    if (!semua.some(x => x.id === SESI_DAD_PILIH)) SESI_DAD_PILIH = (buka || sesi[0] || sholat[0] || {}).id || '';
     let opsiKeg = '<option value="">— pilih kegiatan DAD —</option>';
     (DATA.kegiatan || []).forEach(k => { opsiKeg += `<option value="${esc(k.id)}"${k.id === a.idKeg ? ' selected' : ''}>${esc(tglIndo(k.tanggal))} · ${esc(k.nama)}</option>`; });
     const link = linkAbsenDAD();
@@ -3722,27 +3722,32 @@
         <button class="btn kecil" type="button" onclick="qrAbsenDAD()">▦ Kode QR</button></div>
       <h3 class="sub">📋 Sesi</h3>`;
     const kb = 'padding:3px 8px;min-width:0;margin:0';
-    html += sesi.length ? `<div class="wrap"><table><tr><th>#</th><th>Sesi</th><th class="c">Hadir</th><th class="c">Absen mandiri</th></tr>` +
-      sesi.map((x, i) => `<tr${x.buka ? ' style="background:#eef8ef"' : ''}><td>${i + 1}</td>
+    const tabelSesi = (daftar, jenis) => (daftar.length ? `<div class="wrap"><table><tr><th>#</th><th>${jenis === 'Sholat' ? 'Sholat' : 'Sesi'}</th><th class="c">Hadir</th><th class="c">Absen mandiri</th></tr>` +
+      daftar.map((x, i) => `<tr${x.buka ? ' style="background:#eef8ef"' : ''}><td>${i + 1}</td>
         <td><b>${esc(x.nama)}</b>${x.hari ? ` <small style="color:#888">· hari ke-${esc(x.hari)}</small>` : ''}
           <div style="display:flex;gap:4px;margin-top:4px">
           <button class="btn sek kecil" style="${kb}" data-sesi-geser="${esc(x.id)}" data-arah="-1" ${i === 0 ? 'disabled' : ''} title="Naik">⬆</button>
-          <button class="btn sek kecil" style="${kb}" data-sesi-geser="${esc(x.id)}" data-arah="1" ${i === sesi.length - 1 ? 'disabled' : ''} title="Turun">⬇</button>
+          <button class="btn sek kecil" style="${kb}" data-sesi-geser="${esc(x.id)}" data-arah="1" ${i === daftar.length - 1 ? 'disabled' : ''} title="Turun">⬇</button>
           <button class="btn sek kecil" style="${kb}" data-sesi-ubah="${esc(x.id)}" title="Ubah">✏️</button>
           <button class="btn hapus kecil" style="${kb}" data-sesi-hapus="${esc(x.id)}" title="Hapus">🗑</button></div></td>
         <td class="c">${x.hadir}/${ps.length}</td>
         <td class="c">${x.buka ? `<span class="badge b-Hadir">Dibuka</span><br><button class="btn sek kecil" data-sesi-tutup="${esc(x.id)}">Tutup</button>`
           : `<button class="btn kecil" data-sesi-buka="${esc(x.id)}">Buka</button>`}</td></tr>`).join('') + '</table></div>'
-      : '<p class="kosong">Belum ada sesi.</p>';
-    html += `<div class="baris-aksi"><button class="btn sek kecil" type="button" onclick="tambahSesiDADX(this)">+ Tambah sesi</button></div>`;
+      : `<p class="kosong">Belum ada ${jenis === 'Sholat' ? 'jadwal sholat' : 'sesi'}.</p>`) +
+      `<div class="baris-aksi"><button class="btn sek kecil" type="button" data-sesi-tambah="${jenis}">+ Tambah ${jenis === 'Sholat' ? 'sholat' : 'sesi'}</button></div>`;
+    html += tabelSesi(sesi, 'Sesi');
+    html += `<h3 class="sub">🕌 Sholat Berjamaah</h3>
+      <p style="font-size:12px;color:#666;margin:0 0 6px">Direkap terpisah; <b>tidak</b> menjadi syarat sertifikat. Jadwal yang tidak ada bisa dihapus (🗑).</p>
+      <details${sholat.some(x => x.buka) || !sholat.length ? ' open' : ''}><summary style="cursor:pointer;color:var(--biru);font-size:14px">Jadwal sholat (${sholat.length})${sholat.some(x => x.buka) ? ' · ada yang dibuka' : ''}</summary>` + tabelSesi(sholat, 'Sholat') + '</details>';
     // catat kehadiran per sesi
-    const pilih = sesi.find(x => x.id === SESI_DAD_PILIH);
+    const pilih = semua.find(x => x.id === SESI_DAD_PILIH);
     html += `<h3 class="sub">✅ Catat kehadiran</h3>`;
     if (!ps.length) html += '<p class="kosong">Belum ada pendaftar berstatus <b>Mengikuti DAD</b>. Ubah tahap pendaftar di daftar di atas.</p>';
     else if (pilih) {
-      let opsiSesi = '';
-      sesi.forEach(x => { opsiSesi += `<option value="${esc(x.id)}"${x.id === SESI_DAD_PILIH ? ' selected' : ''}>${esc(x.nama)}${x.buka ? ' (dibuka)' : ''}</option>`; });
-      html += `<label>Sesi</label><select id="pilihSesiDAD">${opsiSesi}</select>
+      const opsi = x => `<option value="${esc(x.id)}"${x.id === SESI_DAD_PILIH ? ' selected' : ''}>${esc(x.nama)}${x.hari && x.jenis === 'Sholat' ? ' · hari ke-' + esc(x.hari) : ''}${x.buka ? ' (dibuka)' : ''}</option>`;
+      let opsiSesi = '<optgroup label="Sesi kegiatan">' + sesi.map(opsi).join('') + '</optgroup>';
+      if (sholat.length) opsiSesi += '<optgroup label="Sholat berjamaah">' + sholat.map(opsi).join('') + '</optgroup>';
+      html += `<label>Sesi / sholat</label><select id="pilihSesiDAD">${opsiSesi}</select>
         <div class="wrap" style="margin-top:8px"><table><tr><th>Peserta</th><th>Kehadiran</th></tr>` +
         ps.map(p => {
           const st = p.absen[pilih.id] || '';
@@ -3755,12 +3760,13 @@
           <button class="btn" type="button" id="btnSimpanSesiDAD" onclick="simpanSesiDADX(this)">Simpan Kehadiran</button></div>`;
     }
     // rekap
-    if (ps.length && sesi.length) {
+    if (ps.length && (sesi.length || sholat.length)) {
       const lengkap = ps.filter(p => p.lengkap).length;
       html += `<h3 class="sub">📊 Rekap</h3><p style="font-size:13px;color:#666;margin:0 0 6px"><b>${lengkap}</b> dari ${ps.length} peserta hadir di semua ${sesi.length} sesi (berhak sertifikat).</p>
-        <div class="wrap"><table><tr><th>Peserta</th><th class="c">Hadir</th><th class="c">Sertifikat</th></tr>` +
+        <div class="wrap"><table><tr><th>Peserta</th><th class="c">Sesi</th>${sholat.length ? '<th class="c">🕌 Sholat</th>' : ''}<th class="c">Sertifikat</th></tr>` +
         ps.map(p => `<tr><td>${esc(p.nama)}${p.status !== 'Mengikuti DAD' ? `<br><small style="color:#888">${esc(p.status)}</small>` : ''}</td>
-          <td class="c">${p.hadir}/${sesi.length}</td><td class="c">${p.lengkap ? '✅' : '<small style="color:#999">belum</small>'}</td></tr>`).join('') + '</table></div>';
+          <td class="c">${p.hadir}/${sesi.length}</td>${sholat.length ? `<td class="c">${p.hadirSholat || 0}/${sholat.length}</td>` : ''}
+          <td class="c">${p.lengkap ? '✅' : '<small style="color:#999">belum</small>'}</td></tr>`).join('') + '</table></div>';
     }
     $('isiAbsenDAD').innerHTML = html;
     const kotak = $('isiAbsenDAD');
@@ -3769,6 +3775,7 @@
     kotak.querySelectorAll('[data-sesi-geser]').forEach(b => { b.onclick = () => aksiSesiDAD('geserSesiDAD', b, b.dataset.sesiGeser, Number(b.dataset.arah)); });
     kotak.querySelectorAll('[data-sesi-ubah]').forEach(b => { b.onclick = () => ubahSesiDADX(b, b.dataset.sesiUbah); });
     kotak.querySelectorAll('[data-sesi-hapus]').forEach(b => { b.onclick = () => hapusSesiDADX(b, b.dataset.sesiHapus); });
+    kotak.querySelectorAll('[data-sesi-tambah]').forEach(b => { b.onclick = () => tambahSesiDADX(b, b.dataset.sesiTambah); });
     if ($('pilihSesiDAD')) $('pilihSesiDAD').onchange = e => { SESI_DAD_PILIH = e.target.value; renderAbsenDAD(); };
   }
   async function aksiSesiDAD(fn, b, ...arg) {
@@ -3780,20 +3787,22 @@
     try { DATA = await panggil('aturKegiatanDAD', PW, $('pilihKegDAD').value); render(); toast('Kegiatan DAD disimpan.'); }
     catch (e) { toast(e.message, true); sibuk(b); }
   }
-  function tambahSesiDADX(b) {
-    const nama = prompt('Nama sesi baru (mis. Materi 9, Malam Keakraban):'); if (!nama || !nama.trim()) return;
-    const hari = prompt('Hari ke berapa? (boleh dikosongkan)', ''); if (hari === null) return;
-    aksiSesiDAD('tambahSesiDAD', b, nama, hari);
+  function sesiDADById(id) { const a = DATA.absenDAD || {}; return (a.sesi || []).concat(a.sholat || []).find(s => s.id === id); }
+  function tambahSesiDADX(b, jenis) {
+    const sholat = jenis === 'Sholat';
+    const nama = prompt(sholat ? 'Nama sholat (mis. Subuh, Dzuhur, Tahajud, Dhuha):' : 'Nama sesi baru (mis. Materi 9, Malam Keakraban):'); if (!nama || !nama.trim()) return;
+    const hari = prompt('Hari ke berapa?' + (sholat ? '' : ' (boleh dikosongkan)'), ''); if (hari === null) return;
+    aksiSesiDAD('tambahSesiDAD', b, nama, hari, sholat ? 'Sholat' : 'Sesi');
   }
   function ubahSesiDADX(b, id) {
-    const x = DATA.absenDAD.sesi.find(s => s.id === id); if (!x) return;
+    const x = sesiDADById(id); if (!x) return;
     const nama = prompt('Nama sesi:', x.nama); if (nama === null || !nama.trim()) return;
     const hari = prompt('Hari ke berapa? (boleh dikosongkan)', x.hari || ''); if (hari === null) return;
     aksiSesiDAD('ubahSesiDAD', b, id, nama, hari);
   }
   function hapusSesiDADX(b, id) {
-    const x = DATA.absenDAD.sesi.find(s => s.id === id); if (!x) return;
-    if (!confirm(`Hapus sesi "${x.nama}"${x.hadir ? ` beserta ${x.hadir} catatan kehadirannya` : ''}?`)) return;
+    const x = sesiDADById(id); if (!x) return;
+    if (!confirm(`Hapus ${x.jenis === 'Sholat' ? 'sholat' : 'sesi'} "${x.nama}"${x.hari ? ' hari ke-' + x.hari : ''}${x.hadir ? ` beserta ${x.hadir} catatan kehadirannya` : ''}?`)) return;
     aksiSesiDAD('hapusSesiDAD', b, id);
   }
   async function simpanSesiDADX(b) {
@@ -3818,7 +3827,7 @@
       g.font = 'bold 38px Arial'; g.fillText('ABSENSI PESERTA DAD', W / 2, 66);
       g.font = '24px Arial'; g.fillText(DATA.config.penyelenggara || 'PK IMM FAI UM Bengkulu', W / 2, 110);
       g.drawImage(qr, (W - 560) / 2, 190, 560, 560);
-      g.fillStyle = '#222'; g.font = '22px Arial'; g.fillText('Pindai tiap sesi, isi email & No. HP pendaftaran', W / 2, 795);
+      g.fillStyle = '#222'; g.font = '22px Arial'; g.fillText('Pindai tiap sesi & sholat, isi email & No. HP pendaftaran', W / 2, 795);
       g.fillStyle = '#8b1a1a'; g.font = 'bold 20px Arial'; g.fillText(link, W / 2, 835);
       $('unduhQRAbsenDAD').href = c.toDataURL('image/png');
       $('boxQRAbsenDAD').hidden = false; $('boxQRAbsenDAD').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -3861,7 +3870,7 @@
       const r = await panggil('absenSesiDAD', d.email, d.hp, { lat: pos.lat, lng: pos.lng });
       f.closest('.kartu').innerHTML = r.sudah
         ? `<h2>✅ Sudah tercatat</h2><p style="margin:0"><b>${esc(r.nama)}</b>, Anda sudah tercatat <b>Hadir</b> di sesi <b>${esc(r.sesi)}</b>.</p>`
-        : `<h2>✅ Absen tercatat</h2><p style="margin:0">Terima kasih, <b>${esc(r.nama)}</b>. Anda tercatat <b>Hadir</b> di sesi <b>${esc(r.sesi)}</b> (±${r.jarak} m dari lokasi).<br><br>Jangan lupa absen di <b>setiap sesi</b>: sertifikat DAD hanya untuk yang hadir di semua sesi.</p>`;
+        : `<h2>✅ Absen tercatat</h2><p style="margin:0">Terima kasih, <b>${esc(r.nama)}</b>. Anda tercatat <b>Hadir</b> di sesi <b>${esc(r.sesi)}</b> (±${r.jarak} m dari lokasi).<br><br>${r.sholat ? 'Semoga istiqamah berjamaah 🤲' : 'Jangan lupa absen di <b>setiap sesi</b>: sertifikat DAD hanya untuk yang hadir di semua sesi.'}</p>`;
     } catch (err) { toast(err.message, true); sibuk(b); }
   }
 
