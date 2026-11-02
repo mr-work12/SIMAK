@@ -102,7 +102,7 @@ const SHEET = {
   PESERTA:  { nama: 'Peserta',   header: ['ID', 'Nama', 'NPM/NIA', 'Email', 'No. HP', 'Tanggal Daftar', 'Tahun DAD', 'Foto Profil', 'PIN (terenkripsi)', 'Sesi (sistem)', 'NIA', 'KTA (berkas)',
     'Tempat Lahir', 'Tanggal Lahir', 'Syahadah DAD', 'Nomor Syahadah', 'Predikat Syahadah', 'Syahadah (berkas)'] },
   LOKASI:   { nama: 'Lokasi',    header: ['ID', 'Nama Lokasi', 'Latitude', 'Longitude', 'Radius (m)', 'Dibuat'] },
-  KEGIATAN: { nama: 'Kegiatan',  header: ['ID', 'Nama Kegiatan', 'Tanggal', 'Waktu', 'Tempat', 'Keterangan', 'Dibuat', 'Status', 'ID Lokasi', 'ID Kalender', 'Sertifikat', 'Nomor Surat Peserta', 'Latar Sertifikat', 'Nomor Surat Panitia', 'Sertifikat Dibuka', 'Penanda Tangan', 'Desain Sertifikat', 'Status Siaran', 'Jumlah Hari', 'Minimal Hadir Sertifikat'] },
+  KEGIATAN: { nama: 'Kegiatan',  header: ['ID', 'Nama Kegiatan', 'Tanggal', 'Waktu', 'Tempat', 'Keterangan', 'Dibuat', 'Status', 'ID Lokasi', 'ID Kalender', 'Sertifikat', 'Nomor Surat Peserta', 'Latar Sertifikat', 'Nomor Surat Panitia', 'Sertifikat Dibuka', 'Penanda Tangan', 'Desain Sertifikat', 'Status Siaran', 'Jumlah Hari', 'Minimal Hadir Sertifikat', 'Wajib Absen'] },
   ABSENSI:  { nama: 'Absensi',   header: ['ID Kegiatan', 'Nama Kegiatan', 'Tanggal Kegiatan', 'ID Kader', 'Nama Kader', 'Status', 'Dicatat', 'Sumber', 'Jarak (m)', 'Koordinat', 'Hari Ke'] },
   GALERI:   { nama: 'Galeri',    header: ['ID', 'ID Kegiatan', 'Judul', 'Tipe', 'File ID', 'Link', 'Dibuat', 'Acara (luar kegiatan)', 'Tanggal'] },
   DAD:      { nama: 'Pendaftar DAD', header: ['ID', 'Nama', 'NPM', 'Prodi', 'Semester', 'Email', 'No. HP', 'Alamat Sekarang', 'Motivasi', 'Tanggal Daftar', 'Status', 'Diperbarui', 'Catatan Admin',
@@ -238,7 +238,7 @@ function hentikanJadwalAkunIni() {
 // =========================================================
 /** Ringkasan untuk Beranda admin. */
 function dasbor_(absen) {
-  absen = absen || rows_('ABSENSI');
+  absen = (absen || rows_('ABSENSI')).filter(ikutRekap_);
   const kini = new Date();
   const ym = d => Utilities.formatDate(d, CONFIG.ZONA_WAKTU, 'yyyy-MM');
   // 6 bulan terakhir
@@ -774,6 +774,12 @@ function tulisUlangAbsensi_(data) {
   if (data.length) sh.getRange(2, 1, data.length, n).setValues(data);
 }
 
+/** Kegiatan wajib diikuti semua kader? Kolom kosong (kegiatan lama) = wajib. */
+function wajibAbsen_(keg) { return String(keg[20] || '') !== 'Tidak'; }
+/** Baris absensi yang dibuat sistem saat absensi ditutup (bukan absen kader sendiri). */
+function absenOtomatis_(r) { return r[7] === 'Otomatis' || r[7] === 'Tidak wajib'; }
+/** Izin otomatis dari kegiatan tidak wajib tidak ikut rekap & persentase kehadiran. */
+function ikutRekap_(r) { return r[7] !== 'Tidak wajib'; }
 function statusTidakHadir_(s) {
   return s === 'Alpa' || (CONFIG.IZIN_SAKIT_DIHITUNG && (s === 'Izin' || s === 'Sakit'));
 }
@@ -1004,7 +1010,7 @@ function pastikanLatarPratinjau_(id) {
 
 function getData(pw) {
   cek_(pw);
-  const absen = rows_('ABSENSI');
+  const absen = rows_('ABSENSI').filter(ikutRekap_);
   const lokasi = petaLokasi_();
 
   const kader = rows_('PESERTA').map(r => ({
@@ -1026,7 +1032,7 @@ function getData(pw) {
     const rekapHari = [];
     for (let h = 1; h <= nHari; h++) {
       const x = { hari: h, tanggal: tambahTgl_(fmt_(r[2]), h - 1), Hadir: 0, Izin: 0, Sakit: 0 };
-      a.forEach(y => { if (hariBaris_(y) === h && x[y[5]] != null && y[7] !== 'Otomatis') x[y[5]]++; });
+      a.forEach(y => { if (hariBaris_(y) === h && x[y[5]] != null && !absenOtomatis_(y)) x[y[5]]++; });
       rekapHari.push(x);
     }
     const orang = {}; a.forEach(y => { orang[y[3]] = 1; });
@@ -1037,7 +1043,7 @@ function getData(pw) {
       id: r[0], nama: r[1], tanggal: fmt_(r[2]), waktu: fmt_(r[3], 'HH:mm'),
       tempat: r[4], ket: r[5], status: statusKeg_(r), rekap: rekap, jumlahAbsen: a.length,
       idLokasi: r[8] || '', namaLokasi: lok ? lok.nama : '(lokasi belum diatur)',
-      sertifikat: r[10] === 'Ya', sertifikatDibuka: r[14] === 'Ya', ttd: String(r[15] || '').split(',').filter(Boolean), jumlahSertifikat: jmlSertif[r[0]] || 0,
+      sertifikat: r[10] === 'Ya', wajib: wajibAbsen_(r), sertifikatDibuka: r[14] === 'Ya', ttd: String(r[15] || '').split(',').filter(Boolean), jumlahSertifikat: jmlSertif[r[0]] || 0,
       statusSiaran: String(r[17] || 'Status lama—belum diverifikasi'),
       nomorPeserta: dasarNomor_(r, kegRows).peserta, nomorPanitia: dasarNomor_(r, kegRows).panitia,
       jumlahTamu: tamuRows.filter(t => t[1] === r[0]).length,
@@ -1197,9 +1203,9 @@ function tambahKegiatan(pw, k) {
   let idKegiatan = '';
   kunci_(() => {
     idKegiatan = idBaru_('KEGIATAN', 'K');
-    sh_('KEGIATAN').appendRow([idKegiatan, k.nama.trim(), "'" + k.tanggal, "'" + (k.waktu || ''),
+    sh_('KEGIATAN').appendRow(amanBaris_([idKegiatan, k.nama.trim(), "'" + k.tanggal, "'" + (k.waktu || ''),
       k.tempat || '', k.ket || '', new Date(), 'Buka', k.idLokasi, '', k.sertifikat ? 'Ya' : '', '', '', '', '', '', '', 'Belum dibagikan',
-      jmlHari, minHdr]);
+      jmlHari, minHdr, k.wajib === false ? 'Tidak' : 'Ya']));
   });
   const data = getData(pw);
   data.infoKalender = 'Kegiatan tersimpan dan absensi dibuka. Belum ada email, notifikasi, atau undangan kalender yang dikirim. Tekan “Bagikan” jika sudah siap.';
@@ -1225,7 +1231,7 @@ function ubahKegiatan(pw, id, k) {
     lama = rows_('KEGIATAN').find(r => r[0] === id);
     if (!lama) throw new Error('Kegiatan tidak ditemukan.');
     // hari terakhir yang sudah ada absennya: kader (Absensi) maupun peserta umum (Peserta Umum)
-    const absen = rows_('ABSENSI').filter(r => r[0] === id && r[7] !== 'Otomatis');
+    const absen = rows_('ABSENSI').filter(r => r[0] === id && !absenOtomatis_(r));
     let hariMaks = absen.reduce((a, r) => Math.max(a, hariBaris_(r)), 0);
     rows_('TAMU').forEach(r => {
       if (r[1] !== id) return;
@@ -1233,7 +1239,8 @@ function ubahKegiatan(pw, id, k) {
     });
     if (hariMaks > n) throw new Error('Sudah ada absensi pada hari ke-' + hariMaks + '. Lama kegiatan tidak bisa dikurangi di bawah ' + hariMaks + ' hari.');
     const sh = sh_('KEGIATAN'), b = barisKeg_(id);
-    if (sh.getMaxColumns() < 20) sh.insertColumnsAfter(sh.getMaxColumns(), 20 - sh.getMaxColumns());
+    if (sh.getMaxColumns() < 21) sh.insertColumnsAfter(sh.getMaxColumns(), 21 - sh.getMaxColumns());
+    sh.getRange(b, 21).setValue(k.wajib === false ? 'Tidak' : 'Ya');
     sh.getRange(b, 2, 1, 5).setValues([amanBaris_([nama, "'" + tanggal, "'" + waktu, tempat, ket])]);
     sh.getRange(b, 9).setValue(k.idLokasi);
     sh.getRange(b, 11).setValue(k.sertifikat ? 'Ya' : '');
@@ -1332,7 +1339,7 @@ function ubahStatusKegiatan(pw, id, status) {
     const sh = sh_('KEGIATAN');
     const last = sh.getLastRow();
     if (last < 2) throw new Error('Kegiatan tidak ditemukan.');
-    const v = sh.getRange(2, 1, last - 1, 9).getValues();
+    const v = sh.getRange(2, 1, last - 1, Math.min(sh.getMaxColumns(), 21)).getValues();
     const i = v.findIndex(r => r[0] === id);
     if (i < 0) throw new Error('Kegiatan tidak ditemukan.');
     sh.getRange(i + 2, 8).setValue(status);
@@ -1357,12 +1364,12 @@ function detailAbsensi(pw, idKeg) {
       jarak: r[8] === '' ? '' : Math.round(Number(r[8]))
     };
     const ph = perHari[r[3]] = perHari[r[3]] || {};
-    if (r[7] === 'Otomatis' && nHari > 1) ph.alpa = true; else ph[hariBaris_(r)] = r[5];
+    if (absenOtomatis_(r) && nHari > 1) ph.oto = r[5]; else ph[hariBaris_(r)] = r[5];
   });
   return rows_('PESERTA').map(p => {
     const ph = perHari[p[0]] || {}, hari = [];
     let hadir = 0;
-    for (let h = 1; h <= nHari; h++) { hari.push(ph[h] || (ph.alpa ? 'Alpa' : '')); if (ph[h] === 'Hadir') hadir++; }
+    for (let h = 1; h <= nHari; h++) { hari.push(ph[h] || ph.oto || ''); if (ph[h] === 'Hadir') hadir++; }
     return Object.assign({ id: p[0], nama: p[1], nim: String(p[2]), hari: hari, hadirKali: hadir, layak: hadir >= minH },
       catat[p[0]] || { status: '', waktu: '', sumber: '', jarak: '' });
   });
@@ -1370,14 +1377,14 @@ function detailAbsensi(pw, idKeg) {
 
 /** Kader yang belum absen pada kegiatan ini dicatat Alpa. */
 function catatAlpa_(keg) {
-  const id = keg[0];
+  const id = keg[0], wajib = wajibAbsen_(keg);   // kegiatan tidak wajib: yang tidak absen dicatat Izin, bukan Alpa
   const sudah = {};
   rows_('ABSENSI').forEach(r => { if (r[0] === id) sudah[r[3]] = true; });
   const now = new Date();
   const tglKeg = fmt_(keg[2]);
   // hanya kader yang sudah terdaftar pada atau sebelum tanggal kegiatan
   const baru = rows_('PESERTA').filter(p => !sudah[p[0]] && (!p[5] || fmt_(p[5]) <= tglKeg))
-    .map(p => [id, keg[1], tglKeg, p[0], p[1], 'Alpa', now, 'Otomatis', '', '']);
+    .map(p => amanBaris_([id, keg[1], tglKeg, p[0], p[1], wajib ? 'Alpa' : 'Izin', now, wajib ? 'Otomatis' : 'Tidak wajib', '', '']));
   if (baru.length) {
     const sa = sh_('ABSENSI');
     sa.getRange(sa.getLastRow() + 1, 1, baru.length, baru[0].length).setValues(baru);
@@ -1398,7 +1405,7 @@ function tugasHarian(e) {
     const sh = sh_('KEGIATAN');
     const last = sh.getLastRow();
     if (last < 2) return;
-    const v = sh.getRange(2, 1, last - 1, Math.min(sh.getMaxColumns(), 20)).getValues();
+    const v = sh.getRange(2, 1, last - 1, Math.min(sh.getMaxColumns(), 21)).getValues();
     v.forEach((r, i) => {
       if (r[0] !== '' && statusKeg_(r) === 'Buka' && tambahTgl_(fmt_(r[2]), jumlahHari_(r) - 1) <= hariIni) {
         sh.getRange(i + 2, 8).setValue('Tutup');
@@ -2794,7 +2801,7 @@ function dataPeserta(email, nim) {
   });
 
   const rekap = { Hadir: 0, Izin: 0, Sakit: 0, Alpa: 0 };
-  absenSaya.forEach(r => { rekap[r[5]] = (rekap[r[5]] || 0) + 1; });
+  absenSaya.filter(ikutRekap_).forEach(r => { rekap[r[5]] = (rekap[r[5]] || 0) + 1; });
 
   // sertifikat milik kader ini
   const sertifikat = {};

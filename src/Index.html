@@ -657,7 +657,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 07.50</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 08.00</p>
     </div>
   </section>
   <div class="tengah">
@@ -667,7 +667,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 07.50</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 08.00</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1130,6 +1130,7 @@
             <div><label>Minimal hadir dapat sertifikat</label><input type="number" name="minHadir" min="1" max="30" value="1"></div>
           </div>
           <p class="info" style="font-size:12px;margin-top:4px">Kegiatan lebih dari 1 hari (mis. DAD 4 hari 3 malam) → absensi <b>per hari</b> mulai tanggal di atas. Sertifikat hanya untuk yang hadir minimal sekian hari; misalnya DAD 4 hari, minimal 2 → hadir 1 hari tidak dapat, hadir 2–4 hari dapat.</p>
+          <label class="cek"><input type="checkbox" name="wajib" checked><span><b>Wajib diikuti semua kader</b> — yang tidak absen dicatat <b>Alpa</b>. Hilangkan centang untuk kegiatan khusus (mis. DAD: hanya peserta &amp; panitia); yang tidak absen dicatat <b>Izin</b>, tetapi absen tetap perlu untuk sertifikat.</span></label>
           <label class="cek"><input type="checkbox" name="sertifikat"><span>Kegiatan ini <b>memakai sertifikat</b> (terbit setelah admin menekan <b>Buka</b> di tabel Buka / Tutup Sertifikat)</span></label>
           <p class="info" id="infoTemplateSertif" style="font-size:12px"></p>
           <div class="baris-aksi"><button class="btn" type="submit" id="btnFormKeg">Tambah Kegiatan</button>
@@ -3539,7 +3540,7 @@
       $('detailAbsen').innerHTML = d.length
         ? '<table><tr><th>Kader</th><th class="c">Status</th><th class="c">Jarak</th><th>Waktu</th></tr>' +
           d.map(r => `<tr><td><b>${esc(r.nama)}</b><br><small>${esc(r.nim)}</small></td>
-            <td class="c">${badge(r.status)}${r.sumber === 'Otomatis' ? '<br><small>otomatis</small>' : ''}</td>
+            <td class="c">${badge(r.status)}${r.sumber === 'Otomatis' ? '<br><small>otomatis</small>' : r.sumber === 'Tidak wajib' ? '<br><small>tidak wajib</small>' : ''}</td>
             <td class="c">${r.jarak === '' ? '-' : r.jarak + ' m'}</td>
             <td><small>${esc(r.waktu || '-')}</small></td></tr>`).join('') + '</table>'
         : '<p class="kosong">Belum ada kader.</p>';
@@ -3584,7 +3585,7 @@
     EDIT_KEG = id;
     f.nama.value = k.nama || ''; f.tanggal.value = k.tanggal || ''; f.waktu.value = k.waktu || '';
     f.idLokasi.value = k.idLokasi || ''; f.tempat.value = k.tempat || ''; f.ket.value = k.ket || '';
-    f.jumlahHari.value = k.jumlahHari || 1; f.minHadir.max = k.jumlahHari || 1; f.minHadir.value = k.minHadir || 1; f.sertifikat.checked = !!k.sertifikat;
+    f.jumlahHari.value = k.jumlahHari || 1; f.minHadir.max = k.jumlahHari || 1; f.minHadir.value = k.minHadir || 1; f.sertifikat.checked = !!k.sertifikat; f.wajib.checked = k.wajib !== false;
     $('judulFormKeg').textContent = '✏️ Edit Kegiatan';
     $('infoEditKeg').innerHTML = `Mengubah <b>${esc(k.nama)}</b>. Tanggal di data absensi kegiatan ini ikut disesuaikan otomatis.`;
     $('infoEditKeg').hidden = false;
@@ -3600,7 +3601,7 @@
     e.preventDefault();
     const f = e.target, b = f.querySelector('button[type=submit]');
     const obj = { nama: f.nama.value, tanggal: f.tanggal.value, waktu: f.waktu.value,
-                  idLokasi: f.idLokasi.value, tempat: f.tempat.value, ket: f.ket.value, sertifikat: f.sertifikat.checked,
+                  idLokasi: f.idLokasi.value, tempat: f.tempat.value, ket: f.ket.value, sertifikat: f.sertifikat.checked, wajib: f.wajib.checked,
                   jumlahHari: Number(f.jumlahHari.value) || 1, minHadir: Number(f.minHadir.value) || 1 };
     if (EDIT_KEG) {
       sibuk(b, 'Menyimpan…');
@@ -3672,7 +3673,7 @@
       ? `<table><tr><th>Tanggal</th><th>Kegiatan</th><th class="c">Absensi</th><th></th></tr>` +
         DATA.kegiatan.map(k => `<tr>
           <td>${esc(rentangTgl(k))}${k.waktu ? '<br><small>' + esc(k.waktu) + '</small>' : ''}</td>
-          <td><b>${esc(k.nama)}</b>${k.sertifikat ? ' <span title="Bersertifikat">📄</span>' : ''}<br><small>📍 ${esc(k.namaLokasi)}${k.tempat ? ' · ' + esc(k.tempat) : ''}</small>
+          <td><b>${esc(k.nama)}</b>${k.sertifikat ? ' <span title="Bersertifikat">📄</span>' : ''}${k.wajib === false ? ' <small class="badge b-Izin">tidak wajib</small>' : ''}<br><small>📍 ${esc(k.namaLokasi)}${k.tempat ? ' · ' + esc(k.tempat) : ''}</small>
             <br><small>📆 ${k.jumlahHari > 1 ? `<b>${k.jumlahHari} hari</b> · absensi per hari` : '1 hari'} · sertifikat min. <b>${k.minHadir}×</b> hadir</small>
             <button class="tautan" style="font-size:12px" onclick="aturHari('${esc(k.id)}',this)">✏️ atur hari</button></td>
           <td class="c">${badge(k.status)}<br><small>${esc(k.statusSiaran || 'Belum dibagikan')}</small></td>
