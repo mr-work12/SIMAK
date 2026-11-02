@@ -1294,6 +1294,7 @@ function bagikanKegiatanBaru(pw, id, paksa) {
   const rows = rows_('KEGIATAN');
   const keg = rows.find(r => r[0] === id);
   if (!keg) throw new Error('Kegiatan tidak ditemukan.');
+  if (!wajibAbsen_(keg)) throw new Error('Kegiatan tidak wajib tidak diberitahukan ke kader. Kabari peserta & panitianya langsung.');
   if (String(keg[17] || '').toLowerCase() === 'sudah dibagikan') throw new Error('Kegiatan ini sudah dibagikan. Email/notifikasi tidak dikirim ulang.');
   // kegiatan lama (sebelum ada kolom Status Siaran) boleh dibagikan setelah admin mengonfirmasi
   if (String(keg[17] || '') !== 'Belum dibagikan' && paksa !== true) throw new Error('Status berbagi kegiatan lama belum diketahui. Konfirmasi dulu agar tidak terkirim ganda.');
@@ -2819,7 +2820,7 @@ function dataPeserta(email, nim) {
   const W = d => fmt_(d, 'yyyy-MM-dd HH:mm:ss');
   const notif = [];
   rows_('KEGIATAN').forEach(r => {
-    if (!(r[6] instanceof Date)) return;
+    if (!(r[6] instanceof Date) || !wajibAbsen_(r)) return;   // kegiatan tidak wajib tidak diumumkan
     const lok = lokasi[r[8]];
     notif.push({ waktu: W(r[6]), ikon: '📅', judul: 'Kegiatan baru: ' + r[1],
       isi: tglIndo_(r[2]) + (fmt_(r[3], 'HH:mm') ? ' · ' + fmt_(r[3], 'HH:mm') : '') + (lok ? ' · ' + lok.nama : '') });
@@ -3660,6 +3661,7 @@ function pengingatWA(e) {
   const hp = rows_('PESERTA').map(r => r[4]).filter(Boolean);
   rows_('KEGIATAN').forEach(r => {
     if (statusKeg_(r) !== 'Buka' && fmt_(r[2]) < hariIni) return;
+    if (!wajibAbsen_(r)) return;                     // kegiatan tidak wajib: tidak diingatkan ke semua kader
     const mulai = fmt_(r[2]), n = jumlahHari_(r), selesai = tambahTgl_(mulai, n - 1);
     const kena = pagi ? (hariIni >= mulai && hariIni <= selesai) : mulai === besok;
     if (!kena) return;

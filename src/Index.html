@@ -657,7 +657,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 08.00</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 08.10</p>
     </div>
   </section>
   <div class="tengah">
@@ -667,7 +667,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 08.00</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 08.10</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1130,7 +1130,7 @@
             <div><label>Minimal hadir dapat sertifikat</label><input type="number" name="minHadir" min="1" max="30" value="1"></div>
           </div>
           <p class="info" style="font-size:12px;margin-top:4px">Kegiatan lebih dari 1 hari (mis. DAD 4 hari 3 malam) → absensi <b>per hari</b> mulai tanggal di atas. Sertifikat hanya untuk yang hadir minimal sekian hari; misalnya DAD 4 hari, minimal 2 → hadir 1 hari tidak dapat, hadir 2–4 hari dapat.</p>
-          <label class="cek"><input type="checkbox" name="wajib" checked><span><b>Wajib diikuti semua kader</b> — yang tidak absen dicatat <b>Alpa</b>. Hilangkan centang untuk kegiatan khusus (mis. DAD: hanya peserta &amp; panitia); yang tidak absen dicatat <b>Izin</b>, tetapi absen tetap perlu untuk sertifikat.</span></label>
+          <label class="cek"><input type="checkbox" name="wajib" checked><span><b>Wajib diikuti semua kader</b> — yang tidak absen dicatat <b>Alpa</b>. Hilangkan centang untuk kegiatan khusus (mis. DAD: hanya peserta &amp; panitia); yang tidak absen dicatat <b>Izin</b>, kegiatan tidak diumumkan ke semua kader, dan absen tetap perlu untuk sertifikat.</span></label>
           <label class="cek"><input type="checkbox" name="sertifikat"><span>Kegiatan ini <b>memakai sertifikat</b> (terbit setelah admin menekan <b>Buka</b> di tabel Buka / Tutup Sertifikat)</span></label>
           <p class="info" id="infoTemplateSertif" style="font-size:12px"></p>
           <div class="baris-aksi"><button class="btn" type="submit" id="btnFormKeg">Tambah Kegiatan</button>
@@ -3676,8 +3676,8 @@
           <td><b>${esc(k.nama)}</b>${k.sertifikat ? ' <span title="Bersertifikat">📄</span>' : ''}${k.wajib === false ? ' <small class="badge b-Izin">tidak wajib</small>' : ''}<br><small>📍 ${esc(k.namaLokasi)}${k.tempat ? ' · ' + esc(k.tempat) : ''}</small>
             <br><small>📆 ${k.jumlahHari > 1 ? `<b>${k.jumlahHari} hari</b> · absensi per hari` : '1 hari'} · sertifikat min. <b>${k.minHadir}×</b> hadir</small>
             <button class="tautan" style="font-size:12px" onclick="aturHari('${esc(k.id)}',this)">✏️ atur hari</button></td>
-          <td class="c">${badge(k.status)}<br><small>${esc(k.statusSiaran || 'Belum dibagikan')}</small></td>
-          <td class="c"><button class="btn kecil" ${String(k.statusSiaran || '') === 'Sudah dibagikan' ? 'disabled title="Sudah dibagikan"' : ''} onclick="bagikanKegiatan('${esc(k.id)}',this)">📤 Bagikan</button> <button class="btn sek kecil" onclick="editKegiatan('${esc(k.id)}')">✏️ Edit</button> <button class="btn hapus kecil" onclick="hapusKegiatan('${esc(k.id)}')">Hapus</button></td>
+          <td class="c">${badge(k.status)}${k.wajib === false ? '' : `<br><small>${esc(k.statusSiaran || 'Belum dibagikan')}</small>`}</td>
+          <td class="c">${k.wajib === false ? '<small style="color:#888;display:block;margin-bottom:4px">Tidak diumumkan<br>ke kader</small>' : `<button class="btn kecil" ${String(k.statusSiaran || '') === 'Sudah dibagikan' ? 'disabled title="Sudah dibagikan"' : ''} onclick="bagikanKegiatan('${esc(k.id)}',this)">📤 Bagikan</button>`} <button class="btn sek kecil" onclick="editKegiatan('${esc(k.id)}')">✏️ Edit</button> <button class="btn hapus kecil" onclick="hapusKegiatan('${esc(k.id)}')">Hapus</button></td>
         </tr>`).join('') + '</table>'
       : '<p class="kosong">Belum ada kegiatan.</p>';
   }
