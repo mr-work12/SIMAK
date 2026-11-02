@@ -115,6 +115,8 @@ const SHEET = {
   SURAT:    { nama: 'Agenda Surat', header: ['ID', 'Jenis', 'Nomor Surat', 'Tanggal Surat', 'Perihal', 'Dari / Kepada', 'Keterangan', 'Berkas', 'Dicatat', 'ID Email'] },
   NOTULEN:  { nama: 'Notulen', header: ['ID', 'Tanggal', 'Rapat / Agenda', 'Tempat', 'Pimpinan Rapat', 'Notulis', 'Peserta', 'Pembahasan', 'Keputusan', 'Dicatat'] },
   INFO:     { nama: 'Pengumuman', header: ['ID', 'Judul', 'Isi', 'Dibuat'] },
+  SESI_DAD: { nama: 'Sesi DAD', header: ['ID', 'Tahun', 'Urutan', 'Nama Sesi', 'Hari Ke', 'Status'] },
+  ABSEN_DAD: { nama: 'Absensi DAD', header: ['ID Sesi', 'Tahun', 'ID Pendaftar', 'Nama', 'Status', 'Waktu', 'Sumber', 'Jarak (m)', 'Koordinat'] },
   LOGWA:    { nama: 'Log WhatsApp', header: ['Waktu', 'Jenis', 'Tujuan', 'Jumlah', 'Status', 'Keterangan'] },
   LOG:      { nama: 'Log Email', header: ['Waktu', 'ID Kader', 'Nama', 'Email', 'Jumlah Tidak Hadir', 'Peringatan Ke-', 'Hasil'] }
 };
@@ -1022,6 +1024,8 @@ function getData(pw) {
   rows_('SERTIFIKAT').forEach(r => { jmlSertif[r[0]] = (jmlSertif[r[0]] || 0) + 1; });
 
   const kegRows = rows_('KEGIATAN'), tamuRows = rows_('TAMU');
+  let dadLayak = {};
+  try { dadLayak = dadLayakSertifikat_(); } catch (e) {}
   const kegiatan = kegRows.map(r => {
     if (r[12]) pastikanLatarPratinjau_(r[12]);
     const a = absen.filter(x => x[0] === r[0]);
@@ -1039,7 +1043,8 @@ function getData(pw) {
     return {
       jumlahHari: nHari, minHadir: minH, tanggalSelesai: tambahTgl_(fmt_(r[2]), nHari - 1), hariKe: hariKe_(r), rekapHari: rekapHari,
       jumlahOrang: Object.keys(orang).length,
-      layakSertifikat: Object.keys(hdr.kader).filter(k => hdr.kader[k] >= minH).length + tamuRows.filter(t => t[1] === r[0] && t[7] === 'Hadir' && (hdr.tamu[t[0]] || 0) >= syaratTamu_(t, minH)).length,
+      layakSertifikat: Object.keys(hdr.kader).filter(k => hdr.kader[k] >= minH).length + tamuRows.filter(t => t[1] === r[0] && t[7] === 'Hadir' && (hdr.tamu[t[0]] || 0) >= syaratTamu_(t, minH)).length + (dadLayak[r[0]] || []).length,
+      dadLayak: (dadLayak[r[0]] || []).length,
       id: r[0], nama: r[1], tanggal: fmt_(r[2]), waktu: fmt_(r[3], 'HH:mm'),
       tempat: r[4], ket: r[5], status: statusKeg_(r), rekap: rekap, jumlahAbsen: a.length,
       idLokasi: r[8] || '', namaLokasi: lok ? lok.nama : '(lokasi belum diatur)',
@@ -1079,6 +1084,7 @@ function getData(pw) {
     passwordBawaan: passwordBawaan_(),
     panitia: daftarPanitia_(),
     tamu: daftarTamu_(),
+    absenDAD: (function () { try { return dataAbsenDAD_(); } catch (e) { return { galat: e.message, sesi: [], peserta: [] }; } })(),
     peranPanitia: CONFIG.PERAN_PANITIA,
     penandaTangan: infoPenandaTangan_(),
     pengumuman: daftarPengumuman_(),
@@ -1416,6 +1422,7 @@ function tugasHarian(e) {
   });
   if (ada) cekPeringatan_();
 
+  try { tutupSesiDAD_(); } catch (e) { Logger.log('Tutup sesi DAD: ' + e.message); }
   // sertifikat untuk kegiatan yang sudah ditutup & memakai sertifikat
   const mulai = Date.now();
   rows_('KEGIATAN').forEach(r => {
@@ -2173,6 +2180,9 @@ function buatSertifikatKegiatan_(keg, mulai) {
   rows_('TAMU').forEach(r => {          // peserta umum / non-FAI lewat link khusus
     if (r[1] === idKeg && r[7] === 'Hadir' && (hdr.tamu[r[0]] || 0) >= syaratTamu_(r, minH) && !sudah[r[0] + '|Peserta']) antre.push({ id: r[0], nama: r[2], peran: 'Peserta',
       identitas: [r[3] ? 'NPM: ' + r[3] : '', r[4]].filter(Boolean).join(' · '), email: String(r[5] || '').trim() });
+  });
+  (dadLayakSertifikat_()[idKeg] || []).forEach(o => {   // peserta DAD yang hadir di semua sesi
+    if (!sudah[o.id + '|Peserta']) antre.push(o);
   });
   rows_('PANITIA').forEach(r => {
     if (r[1] === idKeg && r[5] === 'Ya') {
@@ -4174,8 +4184,209 @@ function cekStatusDAD(kunci) {
     if (!pakaiEmail && rows_('PESERTA').some(r => hpSama_(kunci, r[4]))) return { nama: '', status: 'Sudah jadi kader', tanggal: '', diperbarui: '', grupWA: '' };
     throw new Error(pakaiEmail ? 'Email ini belum terdaftar sebagai calon peserta DAD.' : 'Nomor WhatsApp ini belum terdaftar sebagai calon peserta DAD.');
   }
+  let sesiInfo = null, sertifDAD = '';
+  try {
+    const th = Number(d.tahunDaftar), sesi = sesiDAD_(th).map(r => r[0]);
+    const hadir = rows_('ABSEN_DAD').filter(r => r[2] === d.id && r[4] === 'Hadir' && sesi.indexOf(r[0]) >= 0).length;
+    if (sesi.length && hadir) sesiInfo = { hadir: hadir, total: sesi.length };
+    const s = rows_('SERTIFIKAT').find(r => r[2] === d.id);
+    if (s) sertifDAD = String(s[6] || '');
+  } catch (e) {}
   return { nama: d.nama, lewatHp: !pakaiEmail, emailSamar: samarEmail_(d.email), status: d.status, tanggal: d.tanggal, diperbarui: d.diperbarui, bisaEdit: TAHAP_BISA_EDIT.indexOf(d.status) >= 0,
+    sesiDAD: sesiInfo, sertifikat: sertifDAD,
     grupWA: (d.status === 'Lolos Screening' || d.status === 'Mengikuti DAD' || d.status === 'Terdaftar') ? CONFIG.LINK_GRUP_WA_DAD : '' };
+}
+
+// ===================== ABSENSI SESI DAD =====================
+// Peserta DAD (pendaftar berstatus "Mengikuti DAD") diabsen per sesi: Kedatangan, Pembukaan, Materi 1, dst.
+// Bisa dicentang panitia (admin) atau absen sendiri lewat QR ?absendad (email + No. HP + GPS) saat sesi dibuka.
+// Sertifikat peserta DAD: hadir di SEMUA sesi (100%); tidak dipakai untuk kelulusan.
+const SESI_DAD_BAWAAN = [['Kedatangan', 1], ['Pembukaan', 1]]
+  .concat([1, 2, 3, 4, 5, 6, 7, 8].map(n => ['Materi ' + n, ''])).concat([['Penutupan', '']]);
+const STATUS_SESI_DAD = ['Hadir', 'Izin', 'Sakit'];
+function tahunDAD_() { return Number(Utilities.formatDate(new Date(), CONFIG.ZONA_WAKTU, 'yyyy')); }
+function kegiatanDAD_(tahun) {
+  const id = PropertiesService.getScriptProperties().getProperty('DAD_KEGIATAN_' + tahun) || '';
+  return id ? (rows_('KEGIATAN').find(r => r[0] === id) || null) : null;
+}
+function sesiDAD_(tahun) {
+  return rows_('SESI_DAD').filter(r => Number(r[1]) === tahun).sort((a, b) => Number(a[2]) - Number(b[2]));
+}
+function pastikanSesiDAD_(tahun) {
+  if (sesiDAD_(tahun).length) return;
+  kunci_(() => {
+    if (sesiDAD_(tahun).length) return;
+    const sh = sh_('SESI_DAD');
+    SESI_DAD_BAWAAN.forEach((x, i) => sh.appendRow([idBaru_('SESI_DAD', 'SD'), tahun, i + 1, x[0], x[1], '']));
+  });
+}
+/** Peserta yang diabsen: pendaftar tahun ini berstatus "Mengikuti DAD", plus yang sudah punya catatan absen. */
+function pesertaSesiDAD_(tahun, absen) {
+  const ada = {};
+  absen.forEach(r => { ada[r[2]] = 1; });
+  return rows_('DAD').filter(r => Number(r[27]) === tahun && (normalTahap_(r[10]) === 'Mengikuti DAD' || ada[r[0]]));
+}
+function dataAbsenDAD_() {
+  const tahun = tahunDAD_();
+  pastikanSesiDAD_(tahun);
+  const sesi = sesiDAD_(tahun), keg = kegiatanDAD_(tahun);
+  const absen = rows_('ABSEN_DAD').filter(r => Number(r[1]) === tahun);
+  const peta = {}, mandiri = {};
+  absen.forEach(r => { (peta[r[2]] = peta[r[2]] || {})[r[0]] = r[4]; if (r[6] === 'Peserta') (mandiri[r[2]] = mandiri[r[2]] || {})[r[0]] = 1; });
+  const peserta = pesertaSesiDAD_(tahun, absen).map(r => {
+    const h = peta[r[0]] || {}, hadir = sesi.filter(x => h[x[0]] === 'Hadir').length;
+    return { id: r[0], nama: String(r[1]), npm: String(r[2] || ''), prodi: String(r[3] || ''), status: normalTahap_(r[10]),
+      absen: h, mandiri: mandiri[r[0]] || {}, hadir: hadir, lengkap: sesi.length > 0 && hadir === sesi.length };
+  }).sort((a, b) => a.nama.localeCompare(b.nama));
+  return { tahun: tahun, idKeg: keg ? keg[0] : '', namaKeg: keg ? keg[1] : '',
+    sesi: sesi.map(x => ({ id: x[0], nama: String(x[3]), hari: String(x[4] || ''), buka: x[5] === 'Buka',
+      hadir: absen.filter(a => a[0] === x[0] && a[4] === 'Hadir').length })), peserta: peserta };
+}
+/** Peserta DAD yang berhak sertifikat (hadir semua sesi), dikelompokkan per kegiatan DAD yang ditautkan. */
+function dadLayakSertifikat_() {
+  const props = PropertiesService.getScriptProperties().getProperties(), hasil = {};
+  const semuaSesi = rows_('SESI_DAD'), semuaAbsen = rows_('ABSEN_DAD'), dad = rows_('DAD');
+  Object.keys(props).filter(k => /^DAD_KEGIATAN_\d{4}$/.test(k)).forEach(k => {
+    const tahun = Number(k.slice(-4)), idKeg = props[k];
+    const sesi = semuaSesi.filter(r => Number(r[1]) === tahun).map(r => r[0]);
+    if (!sesi.length) return;
+    const hadir = {};
+    semuaAbsen.forEach(r => { if (Number(r[1]) === tahun && r[4] === 'Hadir' && sesi.indexOf(r[0]) >= 0) (hadir[r[2]] = hadir[r[2]] || {})[r[0]] = 1; });
+    hasil[idKeg] = dad.filter(r => hadir[r[0]] && Object.keys(hadir[r[0]]).length === sesi.length).map(r => ({
+      id: r[0], nama: String(r[1]).trim(), peran: 'Peserta', identitas: [r[2] ? 'NPM: ' + r[2] : '', r[3]].filter(Boolean).join(' · '),
+      email: String(r[5] || '').trim() }));
+  });
+  return hasil;
+}
+function cariSesiDAD_(id) {
+  const sh = sh_('SESI_DAD'), v = sh.getDataRange().getValues();
+  const i = v.findIndex((r, n) => n > 0 && r[0] === id);
+  if (i < 1) throw new Error('Sesi tidak ditemukan.');
+  return { sh: sh, v: v, i: i, baris: i + 1 };
+}
+function aturKegiatanDAD(pw, idKeg) {
+  cek_(pw);
+  idKeg = String(idKeg || '').trim();
+  if (idKeg && !rows_('KEGIATAN').some(r => r[0] === idKeg)) throw new Error('Kegiatan tidak ditemukan.');
+  const props = PropertiesService.getScriptProperties(), k = 'DAD_KEGIATAN_' + tahunDAD_();
+  if (idKeg) props.setProperty(k, idKeg); else props.deleteProperty(k);
+  return getData(pw);
+}
+function tambahSesiDAD(pw, nama, hari) {
+  cek_(pw);
+  nama = rapiTeks_(nama).trim().slice(0, 80);
+  if (!nama) throw new Error('Nama sesi wajib diisi.');
+  const h = parseInt(hari, 10) >= 1 ? Math.min(30, parseInt(hari, 10)) : '';
+  const tahun = tahunDAD_();
+  pastikanSesiDAD_(tahun);
+  kunci_(() => {
+    const urut = sesiDAD_(tahun).reduce((a, r) => Math.max(a, Number(r[2]) || 0), 0) + 1;
+    sh_('SESI_DAD').appendRow(amanBaris_([idBaru_('SESI_DAD', 'SD'), tahun, urut, nama, h, '']));
+  });
+  return getData(pw);
+}
+function ubahSesiDAD(pw, id, nama, hari) {
+  cek_(pw);
+  nama = rapiTeks_(nama).trim().slice(0, 80);
+  if (!nama) throw new Error('Nama sesi wajib diisi.');
+  const h = parseInt(hari, 10) >= 1 ? Math.min(30, parseInt(hari, 10)) : '';
+  kunci_(() => { const c = cariSesiDAD_(id); c.sh.getRange(c.baris, 4, 1, 2).setValues([[amanSel_(nama), h]]); });
+  return getData(pw);
+}
+function geserSesiDAD(pw, id, arah) {
+  cek_(pw);
+  kunci_(() => {
+    const c = cariSesiDAD_(id), tahun = Number(c.v[c.i][1]);
+    const urut = c.v.map((r, n) => ({ r: r, n: n })).filter(x => x.n > 0 && Number(x.r[1]) === tahun).sort((a, b) => Number(a.r[2]) - Number(b.r[2]));
+    const j = urut.findIndex(x => x.n === c.i), k = j + (arah < 0 ? -1 : 1);
+    if (j < 0 || k < 0 || k >= urut.length) return;
+    // tulis ulang urutan 1..n setelah ditukar
+    const t = urut[j]; urut[j] = urut[k]; urut[k] = t;
+    urut.forEach((x, idx) => c.sh.getRange(x.n + 1, 3).setValue(idx + 1));
+  });
+  return getData(pw);
+}
+function hapusSesiDAD(pw, id) {
+  cek_(pw);
+  kunci_(() => { cariSesiDAD_(id); hapusBaris_('SESI_DAD', id); hapusBaris_('ABSEN_DAD', id); });
+  return getData(pw);
+}
+/** Buka satu sesi (sesi lain otomatis ditutup), atau tutup. */
+function bukaSesiDAD(pw, id, buka) {
+  cek_(pw);
+  kunci_(() => {
+    const c = cariSesiDAD_(id), tahun = Number(c.v[c.i][1]);
+    c.v.forEach((r, n) => { if (n > 0 && Number(r[1]) === tahun) {
+      const st = buka && r[0] === id ? 'Buka' : '';
+      if (String(r[5] || '') !== st) c.sh.getRange(n + 1, 6).setValue(st);
+    } });
+  });
+  return getData(pw);
+}
+function tutupSesiDAD_() {
+  const sh = sh_('SESI_DAD'), v = sh.getDataRange().getValues();
+  v.forEach((r, n) => { if (n > 0 && r[5] === 'Buka') sh.getRange(n + 1, 6).setValue(''); });
+}
+/** Panitia mencatat kehadiran satu sesi: ubah = { idPendaftar: 'Hadir' | 'Izin' | 'Sakit' | '' (hapus) }. */
+function simpanAbsenSesiDAD(pw, idSesi, ubah) {
+  cek_(pw);
+  ubah = ubah || {};
+  const ids = Object.keys(ubah);
+  if (!ids.length) throw new Error('Belum ada perubahan.');
+  kunci_(() => {
+    const c = cariSesiDAD_(idSesi), tahun = Number(c.v[c.i][1]);
+    const nama = {};
+    rows_('DAD').forEach(r => { nama[r[0]] = r[1]; });
+    const sh = sh_('ABSEN_DAD'), v = sh.getDataRange().getValues(), hapus = [];
+    ids.forEach(idP => {
+      if (!nama[idP]) return;
+      const st = STATUS_SESI_DAD.indexOf(ubah[idP]) >= 0 ? ubah[idP] : '';
+      const i = v.findIndex((r, n) => n > 0 && r[0] === idSesi && r[2] === idP);
+      if (!st) { if (i > 0) hapus.push(i + 1); return; }
+      const baris = amanBaris_([idSesi, tahun, idP, nama[idP], st, new Date(), 'Panitia', '', '']);
+      if (i > 0) {
+        if (v[i][4] === st) return;                                  // tidak berubah: catatan absen mandiri tetap
+        sh.getRange(i + 1, 1, 1, baris.length).setValues([baris]);
+      } else sh.appendRow(baris);
+    });
+    hapus.sort((a, b) => b - a).forEach(b => sh.deleteRow(b));
+  });
+  return getData(pw);
+}
+/** Halaman absen mandiri peserta DAD (?absendad): sesi yang sedang dibuka. */
+function infoAbsenDAD() {
+  const tahun = tahunDAD_(), x = sesiDAD_(tahun).find(r => r[5] === 'Buka'), keg = kegiatanDAD_(tahun);
+  const lok = keg ? petaLokasi_()[keg[8]] : null;
+  return { tahun: tahun, sesi: x ? { nama: String(x[3]), hari: String(x[4] || '') } : null, kegiatan: keg ? String(keg[1]) : 'Darul Arqam Dasar (DAD)',
+    lokasi: lok ? { nama: lok.nama, radius: lok.radius } : null, penyelenggara: CONFIG.PENYELENGGARA };
+}
+function absenSesiDAD(email, hp, posisi) {
+  email = rapiTeks_(email).trim().toLowerCase();
+  if (!email || !String(hp || '').trim()) throw new Error('Isi email dan No. HP yang dipakai saat mendaftar DAD.');
+  const kb = 'absendad:' + email;
+  cekBatas_(kb);
+  const tahun = tahunDAD_();
+  const r = rows_('DAD').find(x => String(x[5]).trim().toLowerCase() === email);
+  if (!r || !hpSama_(hp, r[6])) { catatGagal_(kb); throw new Error('Email atau No. HP tidak cocok dengan data pendaftaran DAD.'); }
+  if (Number(r[27]) !== tahun || normalTahap_(r[10]) !== 'Mengikuti DAD') throw new Error('Anda belum tercatat sebagai peserta DAD ' + tahun + '. Hubungi panitia.');
+  let hasil = null;
+  kunci_(() => {
+    const x = sesiDAD_(tahun).find(s => s[5] === 'Buka');
+    if (!x) throw new Error('Belum ada sesi yang dibuka panitia. Tunggu aba-aba panitia, lalu coba lagi.');
+    const keg = kegiatanDAD_(tahun), lok = keg ? petaLokasi_()[keg[8]] : null;
+    if (!lok) throw new Error('Lokasi DAD belum diatur panitia. Minta panitia mencatat kehadiran Anda.');
+    if (!posisi || typeof posisi.lat !== 'number' || typeof posisi.lng !== 'number')
+      throw new Error('Lokasi Anda tidak terbaca. Aktifkan GPS dan izinkan akses lokasi.');
+    const jarak = Math.round(jarak_(lok.lat, lok.lng, posisi.lat, posisi.lng));
+    if (jarak > lok.radius) throw new Error('Anda berada ' + jarak + ' m dari ' + lok.nama + '. Absen hanya bisa dalam radius ' + lok.radius + ' m.');
+    const sh = sh_('ABSEN_DAD'), v = sh.getDataRange().getValues();
+    const i = v.findIndex((a, n) => n > 0 && a[0] === x[0] && a[2] === r[0]);
+    if (i > 0 && v[i][4] === 'Hadir') { hasil = { sudah: true, sesi: String(x[3]), nama: String(r[1]) }; return; }
+    const baris = amanBaris_([x[0], tahun, r[0], r[1], 'Hadir', new Date(), 'Peserta', jarak, posisi.lat.toFixed(6) + ', ' + posisi.lng.toFixed(6)]);
+    if (i > 0) sh.getRange(i + 1, 1, 1, baris.length).setValues([baris]); else sh.appendRow(baris);
+    hasil = { sesi: String(x[3]), nama: String(r[1]), jarak: jarak };
+  });
+  return hasil;
 }
 
 function samarEmail_(e) {

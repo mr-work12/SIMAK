@@ -657,7 +657,7 @@
         <button type="button" class="awal-btn" onclick="tampilDaftar(false)">🔑 Masuk Kader</button>
       </div>
       <p class="awal-motto">Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 08.20</p>
+      <p class="awal-kaki">© <span class="tahunIni"></span> Bidang Kader PK IMM FAI UM Bengkulu<br>Versi 2 Nov 2026 · 09.00</p>
     </div>
   </section>
   <div class="tengah">
@@ -667,7 +667,7 @@
       <h2 class="namaPanjang">Sistem Informasi Manajemen Kaderisasi</h2>
       <p class="namaBidang" style="font-style:normal;font-weight:600;color:var(--biru);letter-spacing:.5px">Bidang Kader</p>
       <p>Anggun dalam Moral, Unggul dalam Intelektual</p>
-      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 08.20</p>
+      <p style="font-size:11px;color:#999;font-style:normal">Versi 2 Nov 2026 · 09.00</p>
     </div>
     <div class="seg" hidden>
       <button id="segPeserta" class="aktif" onclick="pilihMasuk('peserta')">Kader</button>
@@ -1491,6 +1491,17 @@
         <div id="barMassalDAD"></div>
         <div id="listDAD"></div>
       </div>
+      <div class="kartu" id="kartuAbsenDAD">
+        <h2>🗓️ Absensi Sesi DAD <span id="tahunAbsenDAD"></span></h2>
+        <p class="info" style="margin-top:0">Peserta = pendaftar berstatus <b>Mengikuti DAD</b>. Kehadiran dicatat per sesi (kedatangan, materi, dll.): dicentang panitia di sini, atau peserta absen sendiri lewat QR saat sesi <b>dibuka</b>. <b>Sertifikat</b> peserta DAD hanya untuk yang hadir di <b>semua sesi</b>; tidak dipakai untuk kelulusan.</p>
+        <div id="isiAbsenDAD"><p class="kosong">Memuat…</p></div>
+        <div id="boxQRAbsenDAD" hidden style="text-align:center;margin-top:10px">
+          <canvas id="kanvasQRAbsenDAD" style="max-width:100%;border:1px solid #eadfd4;border-radius:10px"></canvas>
+          <div class="baris-aksi" style="justify-content:center">
+            <a class="btn kecil" id="unduhQRAbsenDAD" style="text-decoration:none" download="QR Absen DAD.png">⬇ Unduh QR (PNG)</a>
+            <button class="btn sek kecil" type="button" onclick="$('boxQRAbsenDAD').hidden=true">Tutup</button></div>
+        </div>
+      </div>
       <div class="kartu">
         <h2>📋 Biodata Seluruh Pendaftar DAD</h2>
         <div class="baris-aksi" style="margin-top:0">
@@ -2048,6 +2059,8 @@
         ${r.nama ? `<b>${esc(r.nama)}</b>` : ''}${htmlTahapan(r.status)}
         <div class="meta" style="margin-top:6px">${keterangan}${r.tanggal ? `<br><small>Daftar: ${esc(r.tanggal)}${r.diperbarui ? ' · Diperbarui: ' + esc(r.diperbarui) : ''}</small>` : ''}</div>
         ${r.status === 'Sudah jadi kader' ? `<button class="btn penuh" onclick="$('pEmail').value='${r.lewatHp ? '' : esc(email)}';tampilDaftar(false)">Masuk sebagai Kader</button>` : ''}
+        ${r.sesiDAD ? `<p class="info" style="font-size:13px;margin:8px 0 0">🗓️ Kehadiran sesi DAD: <b>${r.sesiDAD.hadir} dari ${r.sesiDAD.total} sesi</b>${r.sesiDAD.hadir >= r.sesiDAD.total ? ' ✅' : ''}</p>` : ''}
+        ${r.sertifikat ? `<a class="btn penuh" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="${esc(r.sertifikat)}" target="_blank" rel="noopener">📄 Unduh Sertifikat DAD</a>` : ''}
         ${r.grupWA ? `<a class="btn-wa" href="${esc(r.grupWA)}" target="_blank" rel="noopener">Gabung Grup WhatsApp DAD</a>` : ''}
         ${r.status !== 'Sudah jadi kader' || r.tanggal ? `<div style="border-top:1px solid var(--garis);margin-top:12px;padding-top:10px">
           <b style="font-size:14px">📄 Formulir pendaftaran${r.bisaEdit ? ' &amp; perbaikan data' : ''}</b>
@@ -2239,6 +2252,7 @@
     // Halaman admin hanya muncul lewat link khusus: <URL aplikasi>?admin
     google.script.url.getLocation(loc => {
       if (loc && loc.parameter && loc.parameter.tamu) { tampilTamu(loc.parameter.tamu); return; }
+      if (loc && loc.parameter && 'absendad' in loc.parameter) { tampilAbsenDAD(); return; }
       // Tautan langsung pendaftaran: /dad, /kader, /status, /daftar (atau ?daftar=dad|kader|status)
       const prm = (loc && loc.parameter) || {}, tuju = prm.daftar || ['dad', 'kader', 'status'].find(k => k in prm) || ('daftar' in prm ? 'pilih' : '');
       if (tuju) {
@@ -2871,6 +2885,7 @@
     renderPesertaAdmin();
     renderGaleriAdmin();
     renderDAD();
+    try { renderAbsenDAD(); } catch (e) { console.error('renderAbsenDAD', e); }
     renderBiodataDAD();
     renderPerkaderanAdmin();
     renderAdministrasi();
@@ -3680,6 +3695,174 @@
           <td class="c"><button class="btn kecil" ${String(k.statusSiaran || '') === 'Sudah dibagikan' ? 'disabled title="Sudah dibagikan"' : ''} onclick="bagikanKegiatan('${esc(k.id)}',this)">📤 Bagikan</button> <button class="btn sek kecil" onclick="editKegiatan('${esc(k.id)}')">✏️ Edit</button> <button class="btn hapus kecil" onclick="hapusKegiatan('${esc(k.id)}')">Hapus</button></td>
         </tr>`).join('') + '</table>'
       : '<p class="kosong">Belum ada kegiatan.</p>';
+  }
+
+
+  // ===================== ABSENSI SESI DAD =====================
+  let SESI_DAD_PILIH = '';
+  function linkAbsenDAD() { return (DATA.config.urlPublik || '').replace(/\/?$/, '/') + '?absendad'; }
+  function renderAbsenDAD() {
+    const a = DATA.absenDAD;
+    if (!a || !$('isiAbsenDAD')) return;
+    $('tahunAbsenDAD').textContent = a.tahun || '';
+    if (a.galat) { $('isiAbsenDAD').innerHTML = `<p class="peringatan">${esc(a.galat)}</p>`; return; }
+    const sesi = a.sesi || [], ps = a.peserta || [], buka = sesi.find(x => x.buka);
+    if (!sesi.some(x => x.id === SESI_DAD_PILIH)) SESI_DAD_PILIH = (buka || sesi[0] || {}).id || '';
+    let opsiKeg = '<option value="">— pilih kegiatan DAD —</option>';
+    (DATA.kegiatan || []).forEach(k => { opsiKeg += `<option value="${esc(k.id)}"${k.id === a.idKeg ? ' selected' : ''}>${esc(tglIndo(k.tanggal))} · ${esc(k.nama)}</option>`; });
+    const link = linkAbsenDAD();
+    let html = `<label>Kegiatan DAD <small>(lokasi absen &amp; sertifikat diambil dari kegiatan ini)</small></label>
+      <div style="display:flex;gap:8px"><select id="pilihKegDAD" style="flex:1">${opsiKeg}</select>
+        <button class="btn sek kecil" type="button" onclick="simpanKegDAD(this)">Simpan</button></div>
+      ${a.idKeg ? '' : '<p class="peringatan" style="font-size:13px">Pilih kegiatan DAD dulu agar peserta bisa absen sendiri (lokasi GPS) dan sertifikatnya terbit.</p>'}
+      <h3 class="sub">📱 Absen mandiri peserta</h3>
+      <p style="font-size:12px;color:#666;margin:0 0 6px">Peserta memindai QR / membuka link, lalu mengisi email &amp; No. HP pendaftaran. Hanya bisa saat ada sesi yang <b>dibuka</b> dan di lokasi kegiatan. Sesi otomatis ditutup tiap pukul 23.00.</p>
+      <input readonly value="${esc(link)}" onclick="this.select()">
+      <div class="baris-aksi"><button class="btn sek kecil" type="button" onclick="salinLinkTamu('${esc(link)}')">📋 Salin link</button>
+        <button class="btn kecil" type="button" onclick="qrAbsenDAD()">▦ Kode QR</button></div>
+      <h3 class="sub">📋 Sesi</h3>`;
+    const kb = 'padding:3px 8px;min-width:0;margin:0';
+    html += sesi.length ? `<div class="wrap"><table><tr><th>#</th><th>Sesi</th><th class="c">Hadir</th><th class="c">Absen mandiri</th></tr>` +
+      sesi.map((x, i) => `<tr${x.buka ? ' style="background:#eef8ef"' : ''}><td>${i + 1}</td>
+        <td><b>${esc(x.nama)}</b>${x.hari ? ` <small style="color:#888">· hari ke-${esc(x.hari)}</small>` : ''}
+          <div style="display:flex;gap:4px;margin-top:4px">
+          <button class="btn sek kecil" style="${kb}" data-sesi-geser="${esc(x.id)}" data-arah="-1" ${i === 0 ? 'disabled' : ''} title="Naik">⬆</button>
+          <button class="btn sek kecil" style="${kb}" data-sesi-geser="${esc(x.id)}" data-arah="1" ${i === sesi.length - 1 ? 'disabled' : ''} title="Turun">⬇</button>
+          <button class="btn sek kecil" style="${kb}" data-sesi-ubah="${esc(x.id)}" title="Ubah">✏️</button>
+          <button class="btn hapus kecil" style="${kb}" data-sesi-hapus="${esc(x.id)}" title="Hapus">🗑</button></div></td>
+        <td class="c">${x.hadir}/${ps.length}</td>
+        <td class="c">${x.buka ? `<span class="badge b-Hadir">Dibuka</span><br><button class="btn sek kecil" data-sesi-tutup="${esc(x.id)}">Tutup</button>`
+          : `<button class="btn kecil" data-sesi-buka="${esc(x.id)}">Buka</button>`}</td></tr>`).join('') + '</table></div>'
+      : '<p class="kosong">Belum ada sesi.</p>';
+    html += `<div class="baris-aksi"><button class="btn sek kecil" type="button" onclick="tambahSesiDADX(this)">+ Tambah sesi</button></div>`;
+    // catat kehadiran per sesi
+    const pilih = sesi.find(x => x.id === SESI_DAD_PILIH);
+    html += `<h3 class="sub">✅ Catat kehadiran</h3>`;
+    if (!ps.length) html += '<p class="kosong">Belum ada pendaftar berstatus <b>Mengikuti DAD</b>. Ubah tahap pendaftar di daftar di atas.</p>';
+    else if (pilih) {
+      let opsiSesi = '';
+      sesi.forEach(x => { opsiSesi += `<option value="${esc(x.id)}"${x.id === SESI_DAD_PILIH ? ' selected' : ''}>${esc(x.nama)}${x.buka ? ' (dibuka)' : ''}</option>`; });
+      html += `<label>Sesi</label><select id="pilihSesiDAD">${opsiSesi}</select>
+        <div class="wrap" style="margin-top:8px"><table><tr><th>Peserta</th><th>Kehadiran</th></tr>` +
+        ps.map(p => {
+          const st = p.absen[pilih.id] || '';
+          let o = '<option value="">—</option>';
+          ['Hadir', 'Izin', 'Sakit'].forEach(v => { o += `<option${st === v ? ' selected' : ''}>${v}</option>`; });
+          return `<tr><td><b>${esc(p.nama)}</b><br><small>${esc([p.prodi, p.npm].filter(Boolean).join(' · '))}${p.mandiri[pilih.id] ? ' · 📱 absen sendiri' : ''}</small></td>
+            <td><select class="stSesiDAD" data-id="${esc(p.id)}" data-awal="${esc(st)}" style="width:auto">${o}</select></td></tr>`;
+        }).join('') + `</table></div>
+        <div class="baris-aksi"><button class="btn sek kecil" type="button" onclick="document.querySelectorAll('.stSesiDAD').forEach(s=>{if(!s.value)s.value='Hadir'})">✓ Yang kosong = Hadir</button>
+          <button class="btn" type="button" id="btnSimpanSesiDAD" onclick="simpanSesiDADX(this)">Simpan Kehadiran</button></div>`;
+    }
+    // rekap
+    if (ps.length && sesi.length) {
+      const lengkap = ps.filter(p => p.lengkap).length;
+      html += `<h3 class="sub">📊 Rekap</h3><p style="font-size:13px;color:#666;margin:0 0 6px"><b>${lengkap}</b> dari ${ps.length} peserta hadir di semua ${sesi.length} sesi (berhak sertifikat).</p>
+        <div class="wrap"><table><tr><th>Peserta</th><th class="c">Hadir</th><th class="c">Sertifikat</th></tr>` +
+        ps.map(p => `<tr><td>${esc(p.nama)}${p.status !== 'Mengikuti DAD' ? `<br><small style="color:#888">${esc(p.status)}</small>` : ''}</td>
+          <td class="c">${p.hadir}/${sesi.length}</td><td class="c">${p.lengkap ? '✅' : '<small style="color:#999">belum</small>'}</td></tr>`).join('') + '</table></div>';
+    }
+    $('isiAbsenDAD').innerHTML = html;
+    const kotak = $('isiAbsenDAD');
+    kotak.querySelectorAll('[data-sesi-buka]').forEach(b => { b.onclick = () => aksiSesiDAD('bukaSesiDAD', b, b.dataset.sesiBuka, true); });
+    kotak.querySelectorAll('[data-sesi-tutup]').forEach(b => { b.onclick = () => aksiSesiDAD('bukaSesiDAD', b, b.dataset.sesiTutup, false); });
+    kotak.querySelectorAll('[data-sesi-geser]').forEach(b => { b.onclick = () => aksiSesiDAD('geserSesiDAD', b, b.dataset.sesiGeser, Number(b.dataset.arah)); });
+    kotak.querySelectorAll('[data-sesi-ubah]').forEach(b => { b.onclick = () => ubahSesiDADX(b, b.dataset.sesiUbah); });
+    kotak.querySelectorAll('[data-sesi-hapus]').forEach(b => { b.onclick = () => hapusSesiDADX(b, b.dataset.sesiHapus); });
+    if ($('pilihSesiDAD')) $('pilihSesiDAD').onchange = e => { SESI_DAD_PILIH = e.target.value; renderAbsenDAD(); };
+  }
+  async function aksiSesiDAD(fn, b, ...arg) {
+    sibuk(b, '…');
+    try { DATA = await panggil(fn, PW, ...arg); render(); } catch (e) { toast(e.message, true); sibuk(b); }
+  }
+  async function simpanKegDAD(b) {
+    sibuk(b, '…');
+    try { DATA = await panggil('aturKegiatanDAD', PW, $('pilihKegDAD').value); render(); toast('Kegiatan DAD disimpan.'); }
+    catch (e) { toast(e.message, true); sibuk(b); }
+  }
+  function tambahSesiDADX(b) {
+    const nama = prompt('Nama sesi baru (mis. Materi 9, Malam Keakraban):'); if (!nama || !nama.trim()) return;
+    const hari = prompt('Hari ke berapa? (boleh dikosongkan)', ''); if (hari === null) return;
+    aksiSesiDAD('tambahSesiDAD', b, nama, hari);
+  }
+  function ubahSesiDADX(b, id) {
+    const x = DATA.absenDAD.sesi.find(s => s.id === id); if (!x) return;
+    const nama = prompt('Nama sesi:', x.nama); if (nama === null || !nama.trim()) return;
+    const hari = prompt('Hari ke berapa? (boleh dikosongkan)', x.hari || ''); if (hari === null) return;
+    aksiSesiDAD('ubahSesiDAD', b, id, nama, hari);
+  }
+  function hapusSesiDADX(b, id) {
+    const x = DATA.absenDAD.sesi.find(s => s.id === id); if (!x) return;
+    if (!confirm(`Hapus sesi "${x.nama}"${x.hadir ? ` beserta ${x.hadir} catatan kehadirannya` : ''}?`)) return;
+    aksiSesiDAD('hapusSesiDAD', b, id);
+  }
+  async function simpanSesiDADX(b) {
+    const ubah = {};
+    document.querySelectorAll('.stSesiDAD').forEach(s => { if (s.value !== s.dataset.awal) ubah[s.dataset.id] = s.value; });
+    if (!Object.keys(ubah).length) { toast('Tidak ada perubahan.'); return; }
+    sibuk(b, 'Menyimpan…');
+    try { DATA = await panggil('simpanAbsenSesiDAD', PW, SESI_DAD_PILIH, ubah); render(); toast('Kehadiran ' + Object.keys(ubah).length + ' peserta disimpan ✓'); }
+    catch (e) { toast(e.message, true); sibuk(b); }
+  }
+  async function qrAbsenDAD() {
+    const link = linkAbsenDAD();
+    try {
+      await muatQRLib();
+      const tmp = document.createElement('div');
+      new QRCode(tmp, { text: link, width: 560, height: 560, colorDark: '#5e0f10', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      const qr = tmp.querySelector('canvas'), W = 800, H = 900, c = $('kanvasQRAbsenDAD'); c.width = W; c.height = H;
+      const g = c.getContext('2d');
+      g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+      g.fillStyle = '#8b1a1a'; g.fillRect(0, 0, W, 150); g.fillStyle = '#f2c200'; g.fillRect(0, 150, W, 10);
+      g.fillStyle = '#ffffff'; g.textAlign = 'center';
+      g.font = 'bold 38px Arial'; g.fillText('ABSENSI PESERTA DAD', W / 2, 66);
+      g.font = '24px Arial'; g.fillText(DATA.config.penyelenggara || 'PK IMM FAI UM Bengkulu', W / 2, 110);
+      g.drawImage(qr, (W - 560) / 2, 190, 560, 560);
+      g.fillStyle = '#222'; g.font = '22px Arial'; g.fillText('Pindai tiap sesi, isi email & No. HP pendaftaran', W / 2, 795);
+      g.fillStyle = '#8b1a1a'; g.font = 'bold 20px Arial'; g.fillText(link, W / 2, 835);
+      $('unduhQRAbsenDAD').href = c.toDataURL('image/png');
+      $('boxQRAbsenDAD').hidden = false; $('boxQRAbsenDAD').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) { toast(e.message, true); }
+  }
+
+  // ----- Halaman absen mandiri peserta DAD (?absendad) -----
+  async function tampilAbsenDAD() {
+    layar('layarTamu');
+    let k;
+    try { k = await panggil('infoAbsenDAD'); }
+    catch (e) { $('isiTamu').innerHTML = `<div class="kartu"><p class="peringatan">${esc(e.message)}</p></div>`; return; }
+    let simpan = {};
+    try { simpan = JSON.parse(localStorage.getItem('dataAbsenDAD') || '{}'); } catch (e) {}
+    $('isiTamu').innerHTML = `
+      <div class="kartu">
+        <h2>🗓️ Absensi Peserta DAD ${esc(k.tahun)}</h2>
+        <p style="margin:0;font-size:14px;line-height:1.6">${esc(k.kegiatan)}${k.lokasi ? '<br>📍 ' + esc(k.lokasi.nama) : ''}</p>
+        <div class="info" style="margin-top:10px">${k.sesi ? `Sesi yang dibuka sekarang:<br><b style="font-size:18px">${esc(k.sesi.nama)}</b>${k.sesi.hari ? ' · hari ke-' + esc(k.sesi.hari) : ''}`
+          : 'Belum ada sesi yang dibuka. Tunggu aba-aba panitia, lalu muat ulang halaman ini.'}</div>
+      </div>
+      ${k.sesi ? `<div class="kartu">
+        <h2>Absen Hadir</h2>
+        <form onsubmit="absenDADX(event)">
+          <label>Email yang dipakai saat mendaftar DAD</label><input type="email" name="email" required autocomplete="email" value="${esc(simpan.email || '')}">
+          <label>No. HP / WhatsApp saat mendaftar</label><input name="hp" required inputmode="tel" value="${esc(simpan.hp || '')}">
+          <button class="btn penuh hijau" id="btnAbsenDAD" type="submit">📍 Absen Hadir</button>
+        </form>
+        <p class="info" style="font-size:12px">Aktifkan GPS. Absen hanya bisa di lokasi DAD. Email &amp; No. HP diingat di HP ini, jadi di sesi berikutnya cukup tekan tombol.</p>
+      </div>` : `<div class="kartu"><button class="btn penuh" onclick="tampilAbsenDAD()">🔄 Muat ulang</button></div>`}`;
+  }
+  async function absenDADX(e) {
+    e.preventDefault();
+    const f = e.target, b = $('btnAbsenDAD'), d = { email: f.email.value.trim(), hp: f.hp.value.trim() };
+    try { localStorage.setItem('dataAbsenDAD', JSON.stringify(d)); } catch (er) {}
+    sibuk(b, 'Membaca lokasi…');
+    try {
+      const pos = await ambilPosisi();
+      sibuk(b, 'Mengirim…');
+      const r = await panggil('absenSesiDAD', d.email, d.hp, { lat: pos.lat, lng: pos.lng });
+      f.closest('.kartu').innerHTML = r.sudah
+        ? `<h2>✅ Sudah tercatat</h2><p style="margin:0"><b>${esc(r.nama)}</b>, Anda sudah tercatat <b>Hadir</b> di sesi <b>${esc(r.sesi)}</b>.</p>`
+        : `<h2>✅ Absen tercatat</h2><p style="margin:0">Terima kasih, <b>${esc(r.nama)}</b>. Anda tercatat <b>Hadir</b> di sesi <b>${esc(r.sesi)}</b> (±${r.jarak} m dari lokasi).<br><br>Jangan lupa absen di <b>setiap sesi</b>: sertifikat DAD hanya untuk yang hadir di semua sesi.</p>`;
+    } catch (err) { toast(err.message, true); sibuk(b); }
   }
 
   // ----- Peserta umum (non-FAI) lewat link ?tamu=ID -----
